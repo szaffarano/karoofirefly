@@ -14,7 +14,7 @@ sunriseSunset = "1.1.2"
 timber = "5.0.1"
 kotlinxSerialization = "1.7.3"
 nordicBle = "2.0.0-alpha02"
-desugarJdkLibs = "2.1.4"
+desugarJdkLibs = "2.1.5"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
