@@ -74,10 +74,11 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           TAG="${GITHUB_REF_NAME}"
           REPO="${GITHUB_REPOSITORY}"
+          VERSION_CODE="$(git rev-list --count HEAD)"
           APK_URL="https://github.com/${REPO}/releases/download/${TAG}/karoo-light-controller-${VERSION}.apk"
           cd app
-          jq --arg url "$APK_URL" --arg ver "$VERSION" \
-            '.latestApkUrl = $url | .latestVersion = $ver' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          jq --arg url "$APK_URL" --arg ver "$VERSION" --argjson vc "$VERSION_CODE" \
+            '.latestApkUrl = $url | .latestVersion = $ver | .latestVersionCode = $vc' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
           cd ..
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
