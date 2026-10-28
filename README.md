@@ -6,6 +6,13 @@
 
 ANT+ & Bluetooth Smart Bike Light Controller for Hammerhead Karoo 3.
 
+> **Note: This is a maintenance fork**
+>
+> This repository is a fork of [derstrassi/karoofirefly](https://github.com/derstrassi/karoofirefly),
+> created because upstream has become inactive and the ANT+ light connection broke after Karoo OS
+> 1.663.2548 (15 Oct 2026). This fork carries the fix that detects the SensorService AIDL
+> transaction codes at runtime so ANT+ lights keep working on current firmware.
+
 > **Early Development / Use at Your Own Risk**
 >
 > This extension uses an undocumented internal Karoo API that may break with firmware updates. Use at your own risk.
