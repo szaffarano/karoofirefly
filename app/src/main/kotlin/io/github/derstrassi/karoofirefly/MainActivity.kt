@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
         val luxFlow = extensionFlow.flatMapLatest {
             it.setSettingsUiActive(true)
             if (ownsLuxSensor) {

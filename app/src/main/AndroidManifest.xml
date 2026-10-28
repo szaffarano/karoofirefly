@@ -45,7 +45,7 @@
 
         <meta-data
             android:name="io.hammerhead.karooext.MANIFEST_URL"
-            android:value="https://raw.githubusercontent.com/derstrassi/karoofirefly/main/app/manifest.json" />
+            android:value="https://raw.githubusercontent.com/szaffarano/karoofirefly/main/app/manifest.json" />
     </application>
 
 </manifest>

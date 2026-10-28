@@ -15,3 +15,13 @@ Thumbs.db
 # ANT SDK JARs
 app/libs/*.jar
 /io/
+
+# Signing keystore
+*.jks
+*.b64
+release.jks
+
+# Nix / direnv / local SDK
+.direnv/
+local.properties
+.envrc
