@@ -19,13 +19,13 @@
         android:layout_height="wrap_content"
         android:textSize="14sp"
         android:textColor="#FFFFFF"
-        android:text="--" />
+        android:text="@string/placeholder_dash" />
 
     <TextView
         android:id="@+id/light_battery_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="10sp"
+        android:textSize="11sp"
         android:textColor="#AAAAAA"
         android:text="" />
 </LinearLayout>

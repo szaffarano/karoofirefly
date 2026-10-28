@@ -1,6 +1,6 @@
 {
   "label": "KarooFireFly",
-  "packageName": "io.github.derstrassi.karoofirefly",
+  "packageName": "io.github.szaffarano.karoofirefly",
   "iconUrl": "https://raw.githubusercontent.com/szaffarano/karoofirefly/main/docs/ic_firefly.svg",
   "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/download/v0.5.3/karoo-light-controller-0.5.3.apk",
   "latestVersion": "0.5.3",

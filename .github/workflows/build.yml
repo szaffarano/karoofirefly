@@ -30,6 +30,19 @@ jobs:
       - name: Decode keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.jks"
 
+      - name: Run lint
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.KAROO_EXT_TOKEN }}
+        run: ./gradlew lintRelease
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-release.*
+
       - name: Build release APK
         env:
           USERNAME: ${{ github.actor }}

@@ -80,11 +80,12 @@ class MainActivity : ComponentActivity() {
             it.ambientLightSensor.currentLux
         }
 
+        val initialLux = luxSensor.currentLux.value
         setContent {
             AppTheme {
                 val settings by repository.settingsFlow.collectAsState(initial = LightControllerSettings())
 
-                val luxValue by luxFlow.collectAsState(initial = luxSensor.currentLux.value)
+                val luxValue by luxFlow.collectAsState(initial = initialLux)
                 val lights = KarooLightControllerExtension.getInstance()
                     ?.discoveredLights?.collectAsState(initial = emptyList())?.value ?: emptyList()
 
