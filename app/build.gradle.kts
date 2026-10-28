@@ -32,9 +32,9 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.github.derstrassi.karoofirefly"
+        applicationId = "io.github.szaffarano.karoofirefly"
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 35
         versionCode = gitCommitCount()
         versionName = "0.6.0-beta1"
         buildConfigField("String", "GIT_SHA", "\"${gitShortSha()}\"")
@@ -65,6 +65,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -88,8 +89,10 @@ dependencies {
     implementation(libs.sunrise.sunset)
     implementation(libs.timber)
     implementation(libs.kotlinx.serialization.json)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.nordic.ble.client)
+
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // ANT Android SDK - place ant-lib.aar in app/libs/
     // Download from: https://github.com/ant-wireless/ANT-Android-SDKs

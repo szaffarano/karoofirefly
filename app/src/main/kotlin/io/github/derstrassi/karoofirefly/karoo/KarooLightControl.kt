@@ -11,6 +11,8 @@ import android.os.IInterface
 import android.os.Parcel
 import android.os.Parcelable
 import io.github.derstrassi.karoofirefly.light.LightController
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -64,9 +66,9 @@ class KarooLightControl(private val context: Context) : LightController {
     private val _supportedModes = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
     val supportedModes: StateFlow<Map<String, Set<String>>> = _supportedModes
     private var lightModeEnumClass: Class<out Enum<*>>? = null
-    private val registeredListeners = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
-    private val pendingRegistrations = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
-    private val pendingLightParamRegistrations = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val registeredListeners = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+    private val pendingRegistrations = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+    private val pendingLightParamRegistrations = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     var onServiceReady: (() -> Unit)? = null
 
     // Serializes SensorService binder work off the main thread — ServiceConnection

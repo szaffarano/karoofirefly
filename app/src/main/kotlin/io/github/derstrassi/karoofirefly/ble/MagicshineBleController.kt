@@ -1,6 +1,11 @@
 package io.github.derstrassi.karoofirefly.ble
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import io.github.derstrassi.karoofirefly.DiscoveredLight
 import io.github.derstrassi.karoofirefly.data.LightProtocol
 import io.github.derstrassi.karoofirefly.light.LightController
@@ -70,8 +75,22 @@ class MagicshineBleController(context: Context) : LightController {
 
     var assignedDeviceIds: Set<String> = emptySet()
 
+    private fun hasScanPermission(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(appContext, Manifest.permission.BLUETOOTH_SCAN) ==
+                PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        }
+
+    @SuppressLint("MissingPermission") // guarded by hasScanPermission() above
     fun startDiscovery() {
         if (scanCallback != null) return
+        if (!hasScanPermission()) {
+            Timber.w("$TAG: BLUETOOTH_SCAN permission not granted; skipping discovery")
+            return
+        }
         val scanner = bleScanner ?: run {
             Timber.w("$TAG: No BLE scanner available")
             return
@@ -133,7 +152,12 @@ class MagicshineBleController(context: Context) : LightController {
         startConnectionSupervisor(address)
     }
 
+    @SuppressLint("MissingPermission") // guarded by hasScanPermission() above
     fun stopDiscovery() {
+        if (!hasScanPermission()) {
+            scanCallback = null
+            return
+        }
         scanCallback?.let { cb ->
             try {
                 bleScanner?.stopScan(cb)
