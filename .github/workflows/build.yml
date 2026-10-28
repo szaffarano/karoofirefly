@@ -90,5 +90,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.APK_NAME }}
-          prerelease: ${{ contains(github.ref_name, '-') || startsWith(github.ref_name, 'v0.') }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
