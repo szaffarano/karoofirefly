@@ -36,21 +36,34 @@
         androidSdk = androidComposition.androidsdk;
         sdkRoot = "${androidSdk}/libexec/android-sdk";
         aapt2 = "${sdkRoot}/build-tools/${buildToolsVersion}/aapt2";
-      in {
-        devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.temurin-bin-17
-            androidSdk
-          ];
 
+        # Shared environment so every shell uses the same SDK/JDK and the
+        # NixOS aapt2 override (AGP's bundled aapt2 won't run on NixOS).
+        commonEnv = {
           ANDROID_HOME = sdkRoot;
           ANDROID_SDK_ROOT = sdkRoot;
           JAVA_HOME = "${pkgs.temurin-bin-17}";
-
-          # AGP's bundled aapt2 is a dynamically-linked binary that won't run on
-          # NixOS; point Gradle at the nix-provided aapt2 instead.
           GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${aapt2}";
         };
+      in {
+        devShells.default = pkgs.mkShell (commonEnv
+          // {
+            packages = [
+              pkgs.temurin-bin-17
+              androidSdk
+            ];
+          });
+
+        # Heavier shell that also provides Android Studio, launched with the
+        # same env: nix develop .#studio --command android-studio .
+        devShells.studio = pkgs.mkShell (commonEnv
+          // {
+            packages = [
+              pkgs.temurin-bin-17
+              androidSdk
+              pkgs.android-studio
+            ];
+          });
       }
     );
 }
