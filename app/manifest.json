@@ -2,10 +2,10 @@
   "label": "KarooFireFly",
   "packageName": "io.github.szaffarano.karoofirefly",
   "iconUrl": "https://raw.githubusercontent.com/szaffarano/karoofirefly/main/docs/ic_firefly.svg",
-  "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/download/v0.6.0/karoo-light-controller-0.6.0.apk",
-  "latestVersion": "0.6.0",
+  "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/download/v0.6.1/karoo-light-controller-0.6.1.apk",
+  "latestVersion": "0.6.1",
   "latestVersionCode": 135,
   "developer": "Sebastián Zaffarano",
   "description": "Automatic smart bike light control based on time of day and ambient light. Supports ANT+ lights (via Karoo pairing) and Magicshine BLE lights (via Bluetooth). Per-light configuration with protocol-specific modes, time-based and ambient light sensor automation, radar warn flash for rear lights, zone change notifications, and manual override via BonusActions.",
-  "releaseNotes": "* Magicshine BLE light support (Hori 1300, EVO 1700)\n* Dynamic per-device light mode queries via ANT+\n* Per-light profiles with protocol-specific modes\n* Radar Warn Flash for rear lights\n* Tap-to-configure light detail dialog with test buttons\n* Battery and temperature readout for BLE lights\n* Live ANT+ connection status\n* Improved service stability (foreground service type)\n* Zone change notifications with per-light mode details"
+  "releaseNotes": "* Maintenance release \u2014 no functional changes\n* Updated build toolchain: Android Gradle Plugin 9.5, Kotlin 2.4, compileSdk 37\n* Updated Jetpack Compose (1.12), Material3 (1.4), Glance (1.2) and other AndroidX libraries"
 }
