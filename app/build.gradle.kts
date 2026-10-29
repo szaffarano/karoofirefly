@@ -23,8 +23,8 @@ android {
         minSdk = 24
         targetSdk = 35
         // Bumped by the prepare-release skill. Must stay monotonically increasing.
-        versionCode = 161
-        versionName = "0.6.1"
+        versionCode = 162
+        versionName = "0.6.2-beta"
         buildConfigField("String", "GIT_SHA", "\"${gitShortSha()}\"")
     }
 
