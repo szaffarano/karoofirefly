@@ -4,8 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,25 +13,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -43,22 +33,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.derstrassi.karoofirefly.BuildConfig
 import io.github.derstrassi.karoofirefly.DiscoveredLight
 import io.github.derstrassi.karoofirefly.R
-import io.github.derstrassi.karoofirefly.data.DayTimeZone
 import io.github.derstrassi.karoofirefly.data.LightAssignment
 import io.github.derstrassi.karoofirefly.data.LightControlMode
 import io.github.derstrassi.karoofirefly.data.LightControllerSettings
 import io.github.derstrassi.karoofirefly.data.LightProtocol
 import io.github.derstrassi.karoofirefly.data.LightRole
-import io.github.derstrassi.karoofirefly.data.modeProviderFor
 import java.util.Calendar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settings: LightControllerSettings,
@@ -99,10 +88,11 @@ fun SettingsScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -133,16 +123,22 @@ fun SettingsScreen(
         val discoveredIds = discoveredLights.map { it.id }.toSet()
         val savedButNotFound = settings.lightAssignments.filter { it.deviceId !in discoveredIds }
 
-        val allLights = (discoveredLights + savedButNotFound.map {
-            DiscoveredLight(it.deviceId, it.deviceName, null, it.protocol, connected = false)
-        }).sortedWith(compareBy<DiscoveredLight> {
-            val isConfigured = settings.lightAssignments.any { a -> a.deviceId == it.id }
-            when {
-                !isConfigured -> 0
-                it.connected -> 1
-                else -> 2
-            }
-        })
+        val allLights =
+            (
+                discoveredLights +
+                    savedButNotFound.map {
+                        DiscoveredLight(it.deviceId, it.deviceName, null, it.protocol, connected = false)
+                    }
+            ).sortedWith(
+                compareBy {
+                    val isConfigured = settings.lightAssignments.any { a -> a.deviceId == it.id }
+                    when {
+                        !isConfigured -> 0
+                        it.connected -> 1
+                        else -> 2
+                    }
+                },
+            )
 
         if (allLights.isEmpty()) {
             Text(
@@ -192,17 +188,21 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Time-based (sunrise/sunset)", modifier = Modifier.weight(1f))
-            Switch(checked = useTimeBased, onCheckedChange = { useTimeBased = it; saveSettings() })
+            Switch(checked = useTimeBased, onCheckedChange = {
+                useTimeBased = it
+                saveSettings()
+            })
         }
 
         if (useTimeBased) {
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val dayStartText = sunriseTime?.let { sr ->
-                    val start = (sr.clone() as Calendar).apply { add(Calendar.MINUTE, dawnOffset.toInt()) }
-                    "%02d:%02d".format(start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE))
-                }
+                val dayStartText =
+                    sunriseTime?.let { sr ->
+                        val start = (sr.clone() as Calendar).apply { add(Calendar.MINUTE, dawnOffset.toInt()) }
+                        "%02d:%02d".format(start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE))
+                    }
                 Text("Day starts at: ${dayStartText ?: "—"}")
                 Text(
                     "Offset: ${dawnOffset.toInt()} min from sunrise",
@@ -219,10 +219,11 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                val nightStartText = sunsetTime?.let { ss ->
-                    val start = (ss.clone() as Calendar).apply { add(Calendar.MINUTE, duskOffset.toInt()) }
-                    "%02d:%02d".format(start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE))
-                }
+                val nightStartText =
+                    sunsetTime?.let { ss ->
+                        val start = (ss.clone() as Calendar).apply { add(Calendar.MINUTE, duskOffset.toInt()) }
+                        "%02d:%02d".format(start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE))
+                    }
                 Text("Night starts at: ${nightStartText ?: "—"}")
                 Text(
                     "Offset: ${duskOffset.toInt()} min from sunset",
@@ -249,7 +250,10 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Ambient Light Sensor", modifier = Modifier.weight(1f))
-            Switch(checked = useAmbientLight, onCheckedChange = { useAmbientLight = it; saveSettings() })
+            Switch(checked = useAmbientLight, onCheckedChange = {
+                useAmbientLight = it
+                saveSettings()
+            })
         }
 
         if (useAmbientLight) {
@@ -283,14 +287,46 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Auto-on with ride", modifier = Modifier.weight(1f))
-                Switch(checked = autoOn, onCheckedChange = { autoOn = it; saveSettings() })
-            }
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Auto-on with ride", modifier = Modifier.weight(1f))
+            Switch(checked = autoOn, onCheckedChange = {
+                autoOn = it
+                saveSettings()
+            })
+        }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Auto-off with ride", modifier = Modifier.weight(1f))
+            Switch(checked = autoOff, onCheckedChange = {
+                autoOff = it
+                saveSettings()
+            })
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Auto-off on pause", modifier = Modifier.weight(1f))
+            Switch(checked = autoOffPause, onCheckedChange = {
+                autoOffPause = it
+                saveSettings()
+            })
+        }
+
+        if (autoOffPause) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
@@ -298,44 +334,27 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Auto-off with ride", modifier = Modifier.weight(1f))
-                Switch(checked = autoOff, onCheckedChange = { autoOff = it; saveSettings() })
+                Text("Keep on at night", modifier = Modifier.weight(1f))
+                Switch(checked = keepOnAtNight, onCheckedChange = {
+                    keepOnAtNight = it
+                    saveSettings()
+                })
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Auto-off on pause", modifier = Modifier.weight(1f))
-                Switch(checked = autoOffPause, onCheckedChange = { autoOffPause = it; saveSettings() })
-            }
-
-            if (autoOffPause) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Keep on at night", modifier = Modifier.weight(1f))
-                    Switch(checked = keepOnAtNight, onCheckedChange = { keepOnAtNight = it; saveSettings() })
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Zone change notifications", modifier = Modifier.weight(1f))
-                Switch(checked = zoneNotifications, onCheckedChange = { zoneNotifications = it; saveSettings() })
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Zone change notifications", modifier = Modifier.weight(1f))
+            Switch(checked = zoneNotifications, onCheckedChange = {
+                zoneNotifications = it
+                saveSettings()
+            })
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider()
@@ -366,9 +385,10 @@ private fun ProtocolBadge(protocol: LightProtocol) {
     when (protocol) {
         LightProtocol.BLE -> {
             Row(
-                modifier = Modifier
-                    .background(Color(0xFF1565C0), badgeShape)
-                    .padding(horizontal = 4.dp, vertical = 1.dp),
+                modifier =
+                    Modifier
+                        .background(Color(0xFF1565C0), badgeShape)
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -385,12 +405,14 @@ private fun ProtocolBadge(protocol: LightProtocol) {
                 )
             }
         }
+
         LightProtocol.ANT_PLUS -> {
             Text(
                 "ANT+",
-                modifier = Modifier
-                    .border(1.dp, Color(0xFF616161), badgeShape)
-                    .padding(horizontal = 4.dp, vertical = 1.dp),
+                modifier =
+                    Modifier
+                        .border(1.dp, Color(0xFF616161), badgeShape)
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFF616161),
                 fontSize = 9.sp,
@@ -407,28 +429,32 @@ private fun LightRow(
 ) {
     val isConfigured = role != null
     val alpha = if (light.connected || !isConfigured) 1f else 0.4f
-    val roleLabel = when (role) {
-        LightRole.FRONT -> "Front"
-        LightRole.REAR -> "Rear"
-        null -> "Tap to configure"
-    }
-    val statusColor = when {
-        !isConfigured -> MaterialTheme.colorScheme.tertiary
-        !light.connected -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.primary
-    }
-    val backgroundColor = when {
-        !isConfigured -> Color(0xFFFFE082)
-        !light.connected -> Color(0xFFE0E0E0)
-        else -> Color.Transparent
-    }
+    val roleLabel =
+        when (role) {
+            LightRole.FRONT -> "Front"
+            LightRole.REAR -> "Rear"
+            null -> "Tap to configure"
+        }
+    val statusColor =
+        when {
+            !isConfigured -> MaterialTheme.colorScheme.tertiary
+            !light.connected -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.primary
+        }
+    val backgroundColor =
+        when {
+            !isConfigured -> Color(0xFFFFE082)
+            !light.connected -> Color(0xFFE0E0E0)
+            else -> Color.Transparent
+        }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor, shape = MaterialTheme.shapes.small)
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(backgroundColor, shape = MaterialTheme.shapes.small)
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -439,10 +465,11 @@ private fun LightRow(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 ProtocolBadge(light.protocol)
-                val infoText = listOfNotNull(
-                    light.manufacturer,
-                    if (!light.connected) "Disconnected" else null,
-                ).joinToString(" · ")
+                val infoText =
+                    listOfNotNull(
+                        light.manufacturer,
+                        if (!light.connected) "Disconnected" else null,
+                    ).joinToString(" · ")
                 if (infoText.isNotEmpty()) {
                     Text(
                         infoText,

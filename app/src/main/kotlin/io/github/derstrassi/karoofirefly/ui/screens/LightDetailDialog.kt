@@ -71,10 +71,11 @@ fun LightDetailDialog(
         }
     }
 
-    val protocolLabel = when (light.protocol) {
-        LightProtocol.ANT_PLUS -> "ANT+"
-        LightProtocol.BLE -> "BLE"
-    }
+    val protocolLabel =
+        when (light.protocol) {
+            LightProtocol.ANT_PLUS -> "ANT+"
+            LightProtocol.BLE -> "BLE"
+        }
     val connectionLabel = if (light.connected) "Connected" else "Not found"
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -106,21 +107,25 @@ fun LightDetailDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) { Text("Close") }
         },
-        dismissButton = if (onDelete != null && assignment != null) {
-            {
-                TextButton(onClick = { showDeleteConfirm = true }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+        dismissButton =
+            if (onDelete != null && assignment != null) {
+                {
+                    TextButton(onClick = { showDeleteConfirm = true }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
                 }
-            }
-        } else null,
+            } else {
+                null
+            },
         title = { Text(light.name, style = MaterialTheme.typography.titleMedium) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                val statusParts = listOfNotNull(
-                    light.manufacturer,
-                    protocolLabel,
-                    connectionLabel,
-                )
+                val statusParts =
+                    listOfNotNull(
+                        light.manufacturer,
+                        protocolLabel,
+                        connectionLabel,
+                    )
                 Text(
                     statusParts.joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
@@ -129,7 +134,7 @@ fun LightDetailDialog(
 
                 val telemetryParts = mutableListOf<String>()
                 light.batteryPercent?.let { telemetryParts.add("Battery: $it%") }
-                light.temperature?.let { telemetryParts.add("Temp: ${it}°C") }
+                light.temperature?.let { telemetryParts.add("Temp: $it°C") }
                 if (telemetryParts.isNotEmpty()) {
                     Text(
                         telemetryParts.joinToString("  "),
@@ -145,11 +150,12 @@ fun LightDetailDialog(
                     selectedId = role?.name ?: "None",
                     options = listOf("FRONT" to "Front", "REAR" to "Rear", "None" to "None"),
                     onSelected = { selected ->
-                        role = when (selected) {
-                            "FRONT" -> LightRole.FRONT
-                            "REAR" -> LightRole.REAR
-                            else -> null
-                        }
+                        role =
+                            when (selected) {
+                                "FRONT" -> LightRole.FRONT
+                                "REAR" -> LightRole.REAR
+                                else -> null
+                            }
                         if (role != null && dayMode == "OFF" && nightMode == "OFF") {
                             val defaultMode = modes.getOrNull(1)?.id ?: "OFF"
                             dayMode = defaultMode
@@ -166,20 +172,32 @@ fun LightDetailDialog(
                         label = "Day",
                         selectedMode = dayMode,
                         modes = modes,
-                        onSelected = { dayMode = it; save() },
-                        onTest = if (onTestMode != null && light.connected) {
-                            { onTestMode(light.id, dayMode) }
-                        } else null,
+                        onSelected = {
+                            dayMode = it
+                            save()
+                        },
+                        onTest =
+                            if (onTestMode != null && light.connected) {
+                                { onTestMode(light.id, dayMode) }
+                            } else {
+                                null
+                            },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     ModeRow(
                         label = "Night",
                         selectedMode = nightMode,
                         modes = modes,
-                        onSelected = { nightMode = it; save() },
-                        onTest = if (onTestMode != null && light.connected) {
-                            { onTestMode(light.id, nightMode) }
-                        } else null,
+                        onSelected = {
+                            nightMode = it
+                            save()
+                        },
+                        onTest =
+                            if (onTestMode != null && light.connected) {
+                                { onTestMode(light.id, nightMode) }
+                            } else {
+                                null
+                            },
                     )
 
                     if (role == LightRole.REAR) {
@@ -199,7 +217,10 @@ fun LightDetailDialog(
                             }
                             Switch(
                                 checked = radarWarnFlash,
-                                onCheckedChange = { radarWarnFlash = it; save() },
+                                onCheckedChange = {
+                                    radarWarnFlash = it
+                                    save()
+                                },
                             )
                         }
                     }
@@ -253,9 +274,10 @@ private fun InlineDropdown(
     val displayName = options.find { it.first == selectedId }?.second ?: selectedId
 
     Row(
-        modifier = modifier
-            .clickable { expanded = true }
-            .padding(vertical = 8.dp),
+        modifier =
+            modifier
+                .clickable { expanded = true }
+                .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -275,7 +297,10 @@ private fun InlineDropdown(
             options.forEach { (id, name) ->
                 DropdownMenuItem(
                     text = { Text(name) },
-                    onClick = { onSelected(id); expanded = false },
+                    onClick = {
+                        onSelected(id)
+                        expanded = false
+                    },
                 )
             }
         }

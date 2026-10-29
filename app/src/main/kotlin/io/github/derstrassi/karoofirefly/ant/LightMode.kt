@@ -1,6 +1,10 @@
 package io.github.derstrassi.karoofirefly.ant
 
-enum class LightMode(val modeNumber: Int, val displayName: String, val karooName: String) {
+enum class LightMode(
+    val modeNumber: Int,
+    val displayName: String,
+    val karooName: String,
+) {
     OFF(0, "Off", "OFF"),
     STEADY_1(1, "Steady 1", "STEADY1"),
     STEADY_2(2, "Steady 2", "STEADY2"),
@@ -27,13 +31,9 @@ enum class LightMode(val modeNumber: Int, val displayName: String, val karooName
     ;
 
     companion object {
-        fun fromModeNumber(number: Int): LightMode? {
-            return entries.find { it.modeNumber == number }
-        }
+        fun fromModeNumber(number: Int): LightMode? = entries.find { it.modeNumber == number }
 
-        fun fromKarooName(name: String): LightMode? {
-            return entries.find { it.karooName == name }
-        }
+        fun fromKarooName(name: String): LightMode? = entries.find { it.karooName == name }
 
         val FALLBACK_MODES = listOf(OFF, STEADY_HIGH, STEADY_LOW, SLOW_FLASH, FAST_FLASH)
     }

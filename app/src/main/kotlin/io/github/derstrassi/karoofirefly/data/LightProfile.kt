@@ -32,10 +32,11 @@ data class LightAssignment(
     val nightMode: String = "OFF",
     val radarWarnFlash: Boolean = false,
 ) {
-    fun modeForZone(zone: DayTimeZone): String = when (zone) {
-        DayTimeZone.DAY -> dayMode
-        DayTimeZone.NIGHT -> nightMode
-    }
+    fun modeForZone(zone: DayTimeZone): String =
+        when (zone) {
+            DayTimeZone.DAY -> dayMode
+            DayTimeZone.NIGHT -> nightMode
+        }
 }
 
 data class LightModeOption(
@@ -52,52 +53,76 @@ object AntPlusModeProvider : LightModeProvider {
         LightMode.FALLBACK_MODES.map { LightModeOption(it.karooName, it.displayName) }
 }
 
-class DynamicAntPlusModeProvider(private val karooNames: Set<String>) : LightModeProvider {
+class DynamicAntPlusModeProvider(
+    private val karooNames: Set<String>,
+) : LightModeProvider {
     override fun availableModes(): List<LightModeOption> {
-        val modes = karooNames.mapNotNull { name ->
-            val mode = LightMode.fromKarooName(name)
-            if (mode != null) LightModeOption(mode.karooName, mode.displayName) else null
-        }.sortedBy { LightMode.fromKarooName(it.id)?.modeNumber ?: Int.MAX_VALUE }
+        val modes =
+            karooNames
+                .mapNotNull { name ->
+                    val mode = LightMode.fromKarooName(name)
+                    if (mode != null) LightModeOption(mode.karooName, mode.displayName) else null
+                }.sortedBy { LightMode.fromKarooName(it.id)?.modeNumber ?: Int.MAX_VALUE }
         return if (modes.any { it.id == "OFF" }) modes else listOf(LightModeOption("OFF", "Off")) + modes
     }
 }
 
-fun modeProviderFor(protocol: LightProtocol, deviceId: String? = null): LightModeProvider = when (protocol) {
-    LightProtocol.ANT_PLUS -> {
-        val supported = deviceId?.let {
-            io.github.derstrassi.karoofirefly.KarooLightControllerExtension.getInstance()
-                ?.lightControl?.supportedModes?.value?.get(it)
+fun modeProviderFor(
+    protocol: LightProtocol,
+    deviceId: String? = null,
+): LightModeProvider =
+    when (protocol) {
+        LightProtocol.ANT_PLUS -> {
+            val supported =
+                deviceId?.let {
+                    io.github.derstrassi.karoofirefly.KarooLightControllerExtension
+                        .getInstance()
+                        ?.lightControl
+                        ?.supportedModes
+                        ?.value
+                        ?.get(it)
+                }
+            if (supported != null) DynamicAntPlusModeProvider(supported) else AntPlusModeProvider
         }
-        if (supported != null) DynamicAntPlusModeProvider(supported) else AntPlusModeProvider
+
+        LightProtocol.BLE -> {
+            val config =
+                deviceId?.let {
+                    io.github.derstrassi.karoofirefly.KarooLightControllerExtension
+                        .getInstance()
+                        ?.magicshineController
+                        ?.getDeviceConfig(it)
+                }
+            if (config != null) {
+                io.github.derstrassi.karoofirefly.ble
+                    .MagicshineDeviceModeProvider(config)
+            } else {
+                io.github.derstrassi.karoofirefly.ble.MagicshineDeviceModeProvider(
+                    io.github.derstrassi.karoofirefly.ble.MagicshineDeviceConfig
+                        .forDevice("M1"),
+                )
+            }
+        }
     }
-    LightProtocol.BLE -> {
-        val config = deviceId?.let {
-            io.github.derstrassi.karoofirefly.KarooLightControllerExtension.getInstance()
-                ?.magicshineController?.getDeviceConfig(it)
-        }
-        if (config != null) {
-            io.github.derstrassi.karoofirefly.ble.MagicshineDeviceModeProvider(config)
-        } else {
-            io.github.derstrassi.karoofirefly.ble.MagicshineDeviceModeProvider(
-                io.github.derstrassi.karoofirefly.ble.MagicshineDeviceConfig.forDevice("M1"),
-            )
-        }
-    }
-}
 
 enum class LightControlMode {
     MANUAL_ONLY,
     TIME_BASED,
     AMBIENT_LIGHT,
-    COMBINED;
+    COMBINED,
+    ;
 
     companion object {
-        fun fromFlags(timeBased: Boolean, ambientLight: Boolean): LightControlMode = when {
-            timeBased && ambientLight -> COMBINED
-            timeBased -> TIME_BASED
-            ambientLight -> AMBIENT_LIGHT
-            else -> MANUAL_ONLY
-        }
+        fun fromFlags(
+            timeBased: Boolean,
+            ambientLight: Boolean,
+        ): LightControlMode =
+            when {
+                timeBased && ambientLight -> COMBINED
+                timeBased -> TIME_BASED
+                ambientLight -> AMBIENT_LIGHT
+                else -> MANUAL_ONLY
+            }
     }
 }
 
@@ -116,11 +141,12 @@ data class LightControllerSettings(
     val lightAssignments: List<LightAssignment> = emptyList(),
 ) {
     val controlMode: LightControlMode
-        get() = try {
-            LightControlMode.valueOf(lightControlMode)
-        } catch (_: IllegalArgumentException) {
-            LightControlMode.TIME_BASED
-        }
+        get() =
+            try {
+                LightControlMode.valueOf(lightControlMode)
+            } catch (_: IllegalArgumentException) {
+                LightControlMode.TIME_BASED
+            }
 
     val useTimeBased: Boolean
         get() = controlMode == LightControlMode.TIME_BASED || controlMode == LightControlMode.COMBINED
@@ -132,17 +158,20 @@ data class LightControllerSettings(
         if (lightAssignments.isEmpty()) return this
         val profileMigrated = lightAssignments.any { it.dayMode != "OFF" || it.nightMode != "OFF" }
         if (profileMigrated) return this
-        val migrated = lightAssignments.map { assignment ->
-            val dayMode = when (assignment.role) {
-                LightRole.FRONT -> LightMode.fromModeNumber(profile.dayModeFront)?.karooName ?: "OFF"
-                LightRole.REAR -> LightMode.fromModeNumber(profile.dayModeRear)?.karooName ?: "OFF"
+        val migrated =
+            lightAssignments.map { assignment ->
+                val dayMode =
+                    when (assignment.role) {
+                        LightRole.FRONT -> LightMode.fromModeNumber(profile.dayModeFront)?.karooName ?: "OFF"
+                        LightRole.REAR -> LightMode.fromModeNumber(profile.dayModeRear)?.karooName ?: "OFF"
+                    }
+                val nightMode =
+                    when (assignment.role) {
+                        LightRole.FRONT -> LightMode.fromModeNumber(profile.nightModeFront)?.karooName ?: "OFF"
+                        LightRole.REAR -> LightMode.fromModeNumber(profile.nightModeRear)?.karooName ?: "OFF"
+                    }
+                assignment.copy(dayMode = dayMode, nightMode = nightMode)
             }
-            val nightMode = when (assignment.role) {
-                LightRole.FRONT -> LightMode.fromModeNumber(profile.nightModeFront)?.karooName ?: "OFF"
-                LightRole.REAR -> LightMode.fromModeNumber(profile.nightModeRear)?.karooName ?: "OFF"
-            }
-            assignment.copy(dayMode = dayMode, nightMode = nightMode)
-        }
         return copy(lightAssignments = migrated)
     }
 }

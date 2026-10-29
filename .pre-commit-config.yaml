@@ -1,0 +1,16 @@
+repos:
+  - repo: local
+    hooks:
+      - id: spotless-check
+        name: spotless (ktlint) check
+        entry: ./gradlew spotlessCheck
+        language: system
+        pass_filenames: false
+        files: \.(kt|kts)$
+
+      - id: detekt
+        name: detekt static analysis
+        entry: ./gradlew detekt
+        language: system
+        pass_filenames: false
+        files: \.kt$

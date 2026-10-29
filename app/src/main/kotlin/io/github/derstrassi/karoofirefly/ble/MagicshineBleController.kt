@@ -23,20 +23,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import no.nordicsemi.kotlin.ble.client.RemoteCharacteristic
 import no.nordicsemi.kotlin.ble.client.android.CentralManager
 import no.nordicsemi.kotlin.ble.client.android.Peripheral
 import no.nordicsemi.kotlin.ble.client.android.native
-import no.nordicsemi.kotlin.ble.client.RemoteCharacteristic
 import no.nordicsemi.kotlin.ble.core.ConnectionState
 import no.nordicsemi.kotlin.ble.core.WriteType
 import timber.log.Timber
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
-import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
-class MagicshineBleController(context: Context) : LightController {
-
+class MagicshineBleController(
+    context: Context,
+) : LightController {
     companion object {
         private const val TAG = "MagicshineBle"
         private const val WRITE_RETRIES = 5
@@ -47,17 +47,22 @@ class MagicshineBleController(context: Context) : LightController {
 
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val centralManager by lazy { CentralManager.Factory.native(appContext, scope) }
+    private val centralManager by lazy { CentralManager.native(appContext, scope) }
     private val writeMutex = Mutex()
 
     private val targetService = Uuid.parse(MagicshineProtocol.SERVICE_UUID)
     private val targetChar = Uuid.parse(MagicshineProtocol.CHARACTERISTIC_UUID)
 
-    private data class BleDevice(val peripheral: Peripheral, val name: String)
+    private data class BleDevice(
+        val peripheral: Peripheral,
+        val name: String,
+    )
 
     private val devices = java.util.concurrent.ConcurrentHashMap<String, BleDevice>()
-    private val characteristics = java.util.concurrent.ConcurrentHashMap<String, RemoteCharacteristic>()
-    private val deviceConfigs = java.util.concurrent.ConcurrentHashMap<String, MagicshineDeviceConfig>()
+    private val characteristics =
+        java.util.concurrent.ConcurrentHashMap<String, RemoteCharacteristic>()
+    private val deviceConfigs =
+        java.util.concurrent.ConcurrentHashMap<String, MagicshineDeviceConfig>()
     private val batteryLevels = java.util.concurrent.ConcurrentHashMap<String, Int>()
     private val temperatures = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
@@ -70,8 +75,10 @@ class MagicshineBleController(context: Context) : LightController {
     private val connectionJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
     private val bleScanner: android.bluetooth.le.BluetoothLeScanner?
-        get() = (appContext.getSystemService(Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager)
-            ?.adapter?.bluetoothLeScanner
+        get() =
+            (appContext.getSystemService(Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager)
+                ?.adapter
+                ?.bluetoothLeScanner
 
     var assignedDeviceIds: Set<String> = emptySet()
 
@@ -80,7 +87,10 @@ class MagicshineBleController(context: Context) : LightController {
             ContextCompat.checkSelfPermission(appContext, Manifest.permission.BLUETOOTH_SCAN) ==
                 PackageManager.PERMISSION_GRANTED
         } else {
-            ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            ContextCompat.checkSelfPermission(
+                appContext,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) ==
                 PackageManager.PERMISSION_GRANTED
         }
 
@@ -91,40 +101,53 @@ class MagicshineBleController(context: Context) : LightController {
             Timber.w("$TAG: BLUETOOTH_SCAN permission not granted; skipping discovery")
             return
         }
-        val scanner = bleScanner ?: run {
-            Timber.w("$TAG: No BLE scanner available")
-            return
-        }
+        val scanner =
+            bleScanner ?: run {
+                Timber.w("$TAG: No BLE scanner available")
+                return
+            }
         Timber.d("$TAG: Starting BLE discovery")
         // Raw Android scan: read only the advertised device name. This avoids the Nordic
         // library's advertisement parser, which crashes on malformed 128-bit UUID data.
-        val callback = object : android.bluetooth.le.ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: android.bluetooth.le.ScanResult) {
-                try {
-                    val name = result.scanRecord?.deviceName ?: return
-                    val address = result.device?.address ?: return
-                    if (devices.containsKey(address)) return
-                    if (MagicshineProtocol.SUPPORTED_NAME_PREFIXES.any { name.startsWith(it, ignoreCase = true) }) {
-                        Timber.d("$TAG: Found Magicshine: $name ($address)")
-                        scope.launch { registerFoundDevice(address, name) }
+        val callback =
+            object : android.bluetooth.le.ScanCallback() {
+                override fun onScanResult(
+                    callbackType: Int,
+                    result: android.bluetooth.le.ScanResult,
+                ) {
+                    try {
+                        val name = result.scanRecord?.deviceName ?: return
+                        val address = result.device?.address ?: return
+                        if (devices.containsKey(address)) return
+                        if (MagicshineProtocol.SUPPORTED_NAME_PREFIXES.any {
+                                name.startsWith(
+                                    it,
+                                    ignoreCase = true,
+                                )
+                            }
+                        ) {
+                            Timber.d("$TAG: Found Magicshine: $name ($address)")
+                            scope.launch { registerFoundDevice(address, name) }
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "$TAG: Skipping scan result")
                     }
-                } catch (e: Exception) {
-                    Timber.w(e, "$TAG: Skipping scan result")
+                }
+
+                override fun onScanFailed(errorCode: Int) {
+                    Timber.e("$TAG: BLE scan failed: $errorCode")
                 }
             }
-
-            override fun onScanFailed(errorCode: Int) {
-                Timber.e("$TAG: BLE scan failed: $errorCode")
-            }
-        }
         try {
             // The scanner only runs while the settings UI is open (to discover new lights the
             // user is about to add), so a fast, short-lived LOW_LATENCY scan is fine here.
             // Assigned lights are (re)connected directly by address, not via this scan, so the
             // scanner never runs for a whole ride and its power draw is not a concern.
-            val settings = android.bluetooth.le.ScanSettings.Builder()
-                .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .build()
+            val settings =
+                android.bluetooth.le.ScanSettings
+                    .Builder()
+                    .setScanMode(android.bluetooth.le.ScanSettings.SCAN_MODE_LOW_LATENCY)
+                    .build()
             scanner.startScan(null, settings, callback)
             scanCallback = callback
         } catch (e: Exception) {
@@ -132,12 +155,16 @@ class MagicshineBleController(context: Context) : LightController {
         }
     }
 
-    private fun registerFoundDevice(address: String, name: String) {
+    private fun registerFoundDevice(
+        address: String,
+        name: String,
+    ) {
         if (devices.containsKey(address)) return
-        val peripheral = centralManager.getPeripheralsById(listOf(address)).firstOrNull() ?: run {
-            Timber.w("$TAG: No peripheral for $address")
-            return
-        }
+        val peripheral =
+            centralManager.getPeripheralsById(listOf(address)).firstOrNull() ?: run {
+                Timber.w("$TAG: No peripheral for $address")
+                return
+            }
         devices[address] = BleDevice(peripheral, name)
         deviceConfigs[address] = MagicshineDeviceConfig.forDevice(name)
         Timber.d("$TAG: Device config for $name: module=${deviceConfigs[address]?.moduleType}")
@@ -175,14 +202,16 @@ class MagicshineBleController(context: Context) : LightController {
      */
     private fun startConnectionSupervisor(address: String) {
         if (connectionJobs[address]?.isActive == true) return
-        connectionJobs[address] = scope.launch {
-            var backoff = RECONNECT_MIN_MS
-            while (isActive && address in assignedDeviceIds) {
-                val wasConnected = attemptConnect(address)
-                backoff = if (wasConnected) RECONNECT_MIN_MS else minOf(backoff * 2, RECONNECT_MAX_MS)
-                delay(backoff)
+        connectionJobs[address] =
+            scope.launch {
+                var backoff = RECONNECT_MIN_MS
+                while (isActive && address in assignedDeviceIds) {
+                    val wasConnected = attemptConnect(address)
+                    backoff =
+                        if (wasConnected) RECONNECT_MIN_MS else minOf(backoff * 2, RECONNECT_MAX_MS)
+                    delay(backoff.milliseconds)
+                }
             }
-        }
     }
 
     /**
@@ -191,11 +220,12 @@ class MagicshineBleController(context: Context) : LightController {
      * (the supervisor backs off before the next try).
      */
     private suspend fun attemptConnect(address: String): Boolean {
-        val peripheral = devices[address]?.peripheral
-            ?: centralManager.getPeripheralsById(listOf(address)).firstOrNull()
-            ?: return false
+        val peripheral =
+            devices[address]?.peripheral
+                ?: centralManager.getPeripheralsById(listOf(address)).firstOrNull()
+                ?: return false
         // Connecting by address without a prior scan: make sure we have a device entry and a
-        // command config derived from the (bonded) name, so setMode works afterwards.
+        // command config derived from the (bonded) name, so setMode works afterward.
         val name = devices[address]?.name ?: peripheral.name
         if (name != null) {
             devices.putIfAbsent(address, BleDevice(peripheral, name))
@@ -203,17 +233,19 @@ class MagicshineBleController(context: Context) : LightController {
         }
         return try {
             Timber.d("$TAG: Connecting to $address")
-            val options = CentralManager.ConnectionOptions.Direct(
-                timeout = 8.seconds,
-                retry = 2,
-                retryDelay = 1.seconds,
-            )
+            val options =
+                CentralManager.ConnectionOptions.Direct(
+                    timeout = 8.seconds,
+                    retry = 2,
+                    retryDelay = 1.seconds,
+                )
             centralManager.connect(peripheral, options)
 
-            val connected = withTimeoutOrNull(10_000) {
-                peripheral.state.first { it is ConnectionState.Connected }
-                true
-            } ?: false
+            val connected =
+                withTimeoutOrNull(10_000.milliseconds) {
+                    peripheral.state.first { it is ConnectionState.Connected }
+                    true
+                } ?: false
             if (!connected) {
                 Timber.w("$TAG: Connection timeout for $address")
                 return false
@@ -230,12 +262,13 @@ class MagicshineBleController(context: Context) : LightController {
             scope.launch {
                 try {
                     characteristic.subscribe().collect { data -> parseNotification(address, data) }
-                } catch (_: Exception) { }
+                } catch (_: Exception) {
+                }
             }
 
-            delay(180)
+            delay(180.milliseconds)
             writeBytes(address, MagicshineProtocol.buildQuery(0xA4.toByte()))
-            delay(100)
+            delay(100.milliseconds)
             writeBytes(address, MagicshineProtocol.buildQuery(0xA1.toByte()))
 
             updateDiscoveredLights()
@@ -243,10 +276,10 @@ class MagicshineBleController(context: Context) : LightController {
 
             scope.launch {
                 while (characteristics.containsKey(address)) {
-                    delay(60_000)
+                    delay(60_000.milliseconds)
                     if (!characteristics.containsKey(address)) break
                     writeBytes(address, MagicshineProtocol.buildQuery(0xA4.toByte()))
-                    delay(100)
+                    delay(100.milliseconds)
                     writeBytes(address, MagicshineProtocol.buildQuery(0xA1.toByte()))
                 }
             }
@@ -265,19 +298,23 @@ class MagicshineBleController(context: Context) : LightController {
     }
 
     private suspend fun findTargetCharacteristic(peripheral: Peripheral): RemoteCharacteristic? {
-        for (attempt in 1..10) {
+        repeat((1..10).count()) {
             try {
                 val services = peripheral.services().value
                 val service = services.firstOrNull { it.uuid == targetService }
                 val characteristic = service?.characteristics?.firstOrNull { it.uuid == targetChar }
                 if (characteristic != null) return characteristic
-            } catch (_: Exception) { }
-            delay(360)
+            } catch (_: Exception) {
+            }
+            delay(360.milliseconds)
         }
         return null
     }
 
-    override fun setMode(deviceId: String, modeName: String) {
+    override fun setMode(
+        deviceId: String,
+        modeName: String,
+    ) {
         val config = deviceConfigs[deviceId]
         if (config == null) {
             Timber.w("$TAG: No config for device $deviceId")
@@ -296,7 +333,10 @@ class MagicshineBleController(context: Context) : LightController {
 
     fun getDeviceConfig(deviceId: String): MagicshineDeviceConfig? = deviceConfigs[deviceId]
 
-    private suspend fun writeBytes(address: String, bytes: ByteArray) {
+    private suspend fun writeBytes(
+        address: String,
+        bytes: ByteArray,
+    ) {
         val characteristic = characteristics[address]
         if (characteristic == null) {
             Timber.w("$TAG: Not connected to $address, cannot send command")
@@ -313,7 +353,7 @@ class MagicshineBleController(context: Context) : LightController {
                     if (attempt == WRITE_RETRIES) {
                         Timber.e(e, "$TAG: Write failed after $WRITE_RETRIES attempts to $address")
                     } else {
-                        delay(WRITE_RETRY_DELAY_MS)
+                        delay(WRITE_RETRY_DELAY_MS.milliseconds)
                     }
                 }
             }
@@ -321,20 +361,24 @@ class MagicshineBleController(context: Context) : LightController {
     }
 
     private fun updateDiscoveredLights() {
-        _discoveredLights.value = devices.map { (address, device) ->
-            DiscoveredLight(
-                id = address,
-                name = device.name,
-                manufacturer = "Magicshine",
-                protocol = LightProtocol.BLE,
-                connected = characteristics.containsKey(address),
-                batteryPercent = batteryLevels[address],
-                temperature = temperatures[address],
-            )
-        }
+        _discoveredLights.value =
+            devices.map { (address, device) ->
+                DiscoveredLight(
+                    id = address,
+                    name = device.name,
+                    manufacturer = "Magicshine",
+                    protocol = LightProtocol.BLE,
+                    connected = characteristics.containsKey(address),
+                    batteryPercent = batteryLevels[address],
+                    temperature = temperatures[address],
+                )
+            }
     }
 
-    private fun parseNotification(address: String, data: ByteArray) {
+    private fun parseNotification(
+        address: String,
+        data: ByteArray,
+    ) {
         if (data.size < 6) return
         Timber.d("$TAG: Notification from $address: ${MagicshineProtocol.bytesToHex(data)}")
         val type = data[2].toInt() and 0xFF
@@ -352,6 +396,7 @@ class MagicshineBleController(context: Context) : LightController {
                     updateDiscoveredLights()
                 }
             }
+
             0xB1 -> {
                 var temp: Int? = null
                 // Try marker "1703" first (EVO 1700 etc.)
@@ -368,7 +413,7 @@ class MagicshineBleController(context: Context) : LightController {
                 }
                 if (temp != null && temp in -40..120) {
                     temperatures[address] = temp
-                    Timber.d("$TAG: Temperature $address: ${temp}°C")
+                    Timber.d("$TAG: Temperature $address: $temp°C")
                     updateDiscoveredLights()
                 }
             }
@@ -385,8 +430,7 @@ class MagicshineBleController(context: Context) : LightController {
         updateDiscoveredLights()
     }
 
-    fun allConnected(deviceIds: Set<String>): Boolean =
-        deviceIds.all { characteristics.containsKey(it) }
+    fun allConnected(deviceIds: Set<String>): Boolean = deviceIds.all { characteristics.containsKey(it) }
 
     fun destroy() {
         stopDiscovery()

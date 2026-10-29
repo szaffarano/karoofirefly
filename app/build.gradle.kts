@@ -2,17 +2,30 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.detekt)
 }
 
-fun gitShortSha(): String = try {
-    val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-        .directory(rootDir)
-        .redirectErrorStream(true)
-        .start()
-    process.inputStream.bufferedReader().readText().trim().ifEmpty { "unknown" }
-} catch (e: Exception) {
-    "unknown"
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
+    baseline = file("$rootDir/config/detekt/baseline.xml")
 }
+
+fun gitShortSha(): String =
+    try {
+        val process =
+            ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                .directory(rootDir)
+                .redirectErrorStream(true)
+                .start()
+        process.inputStream
+            .bufferedReader()
+            .readText()
+            .trim()
+            .ifEmpty { "unknown" }
+    } catch (e: Exception) {
+        "unknown"
+    }
 
 android {
     namespace = "io.github.derstrassi.karoofirefly"
@@ -98,6 +111,7 @@ tasks.register("generateManifest") {
     description = "Regenerate app/manifest.json from the current version and RELEASE_NOTES"
     doLast {
         val manifestFile = file("manifest.json")
+
         @Suppress("UNCHECKED_CAST")
         val json = groovy.json.JsonSlurper().parse(manifestFile) as MutableMap<String, Any?>
         json["latestVersion"] = android.defaultConfig.versionName

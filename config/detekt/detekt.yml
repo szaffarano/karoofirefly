@@ -1,0 +1,29 @@
+# Detekt configuration. Rules not listed here inherit from the bundled default
+# config because `buildUponDefaultConfig = true` is set in app/build.gradle.kts.
+# Run `./gradlew detektGenerateConfig` to materialize the full default set for tuning.
+
+naming:
+  FunctionNaming:
+    # @Composable functions use PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  LongMethod:
+    # Compose UI functions are legitimately long.
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # Compose screens group many @Composable helpers per file.
+    ignoreAnnotatedFunctions: ['Composable']
+
+style:
+  MagicNumber:
+    # dp/sp/color literals in Compose UI are idiomatic, not magic numbers.
+    ignoreAnnotated: ['Composable']
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  MaxLineLength:
+    # Line length is owned by ktlint/Spotless to avoid double-reporting.
+    active: false
