@@ -21,12 +21,12 @@
           };
         };
 
-        buildToolsVersion = "35.0.0";
+        buildToolsVersion = "36.0.0";
         platformVersion = "35";
 
         androidComposition = pkgs.androidenv.composeAndroidPackages {
           cmdLineToolsVersion = "latest";
-          buildToolsVersions = ["34.0.0" buildToolsVersion];
+          buildToolsVersions = ["35.0.0" buildToolsVersion];
           platformVersions = [platformVersion];
           includeEmulator = false;
           includeSystemImages = false;
