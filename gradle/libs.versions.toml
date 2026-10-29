@@ -1,5 +1,5 @@
 [versions]
-agp = "8.7.3"
+agp = "8.13.2"
 kotlin = "2.0.0"
 karooExt = "1.1.8"
 androidxCore = "1.13.1"
