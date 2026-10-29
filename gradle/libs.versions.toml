@@ -1,6 +1,6 @@
 [versions]
 agp = "9.5.0"
-kotlin = "2.2.20"
+kotlin = "2.4.21"
 karooExt = "1.1.8"
 androidxCore = "1.13.1"
 androidxLifecycle = "2.8.6"
