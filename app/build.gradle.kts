@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         applicationId = "io.github.szaffarano.karoofirefly"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 35
         versionCode = gitCommitCount()
         versionName = "0.6.0"
