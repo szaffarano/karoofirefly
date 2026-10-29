@@ -6,8 +6,19 @@
   "packageRules": [
     {
       "description": "Pin Nordic Kotlin BLE library. 2.0.0-beta09 introduces breaking API changes (NativeAndroidEnvironment factory, RemoteServices) that require a source migration in MagicshineBleController. Remove this rule once the migration is done.",
-      "matchPackageNames": ["no.nordicsemi.kotlin.ble:**"],
+      "matchPackageNames": [
+        "no.nordicsemi.kotlin.ble:**"
+      ],
       "allowedVersions": "<=2.0.0-alpha02"
+    },
+    {
+      "description": "Pin Android Gradle Plugin below 9.5 (not suported by android-studio < 2026.2.2).",
+      "matchPackageNames": [
+        "com.android.application",
+        "com.android.library",
+        "com.android.tools.build:gradle"
+      ],
+      "allowedVersions": "<9.5"
     }
   ]
 }
