@@ -4,14 +4,12 @@ import ca.rmen.sunrisesunset.SunriseSunset
 import io.github.derstrassi.karoofirefly.data.DayTimeZone
 import timber.log.Timber
 import java.util.Calendar
-import java.util.TimeZone
 
 /**
  * Determines the current DayTimeZone based on GPS location and time.
  * Uses ca.rmen:lib-sunrise-sunset for local sunrise/sunset calculation.
  */
 class TimeBasedController {
-
     private var lastLatitude: Double? = null
     private var lastLongitude: Double? = null
     private var lastSunrise: Calendar? = null
@@ -24,7 +22,10 @@ class TimeBasedController {
     /**
      * Update with new GPS coordinates. Recalculates sunrise/sunset.
      */
-    fun onLocationUpdate(latitude: Double, longitude: Double) {
+    fun onLocationUpdate(
+        latitude: Double,
+        longitude: Double,
+    ) {
         lastLatitude = latitude
         lastLongitude = longitude
         recalculate()
@@ -35,11 +36,12 @@ class TimeBasedController {
         val lng = lastLongitude ?: return
 
         val now = Calendar.getInstance()
-        val result = SunriseSunset.getSunriseSunset(
-            now,
-            lat,
-            lng,
-        )
+        val result =
+            SunriseSunset.getSunriseSunset(
+                now,
+                lat,
+                lng,
+            )
         lastSunrise = result[0]
         lastSunset = result[1]
 
@@ -55,12 +57,14 @@ class TimeBasedController {
         val sunset = lastSunset ?: return DayTimeZone.DAY
         val now = Calendar.getInstance()
 
-        val dayStart = (sunrise.clone() as Calendar).apply {
-            add(Calendar.MINUTE, dawnOffsetMinutes)
-        }
-        val nightStart = (sunset.clone() as Calendar).apply {
-            add(Calendar.MINUTE, duskOffsetMinutes)
-        }
+        val dayStart =
+            (sunrise.clone() as Calendar).apply {
+                add(Calendar.MINUTE, dawnOffsetMinutes)
+            }
+        val nightStart =
+            (sunset.clone() as Calendar).apply {
+                add(Calendar.MINUTE, duskOffsetMinutes)
+            }
 
         return when {
             now.before(dayStart) -> DayTimeZone.NIGHT
@@ -72,5 +76,6 @@ class TimeBasedController {
     fun hasSunData(): Boolean = lastSunrise != null && lastSunset != null
 
     fun getSunriseTime(): Calendar? = lastSunrise
+
     fun getSunsetTime(): Calendar? = lastSunset
 }

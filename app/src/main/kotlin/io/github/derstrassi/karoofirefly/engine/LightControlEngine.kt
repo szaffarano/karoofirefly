@@ -102,9 +102,10 @@ class LightControlEngine(
         return DayTimeZone.DAY
     }
 
-    private fun hasModesForZone(zone: DayTimeZone): Boolean {
-        return settings.lightAssignments.any { it.modeForZone(zone) != "OFF" }
-    }
+    private fun hasModesForZone(zone: DayTimeZone): Boolean =
+        settings.lightAssignments.any {
+            it.modeForZone(zone) != "OFF"
+        }
 
     fun onCycleMode() {
         _state.value = EngineState.MANUAL_OVERRIDE
@@ -115,14 +116,23 @@ class LightControlEngine(
 
         when (_activeZone.value) {
             null -> {
-                if (dayHasModes) applyZone(DayTimeZone.DAY)
-                else if (nightHasModes) applyZone(DayTimeZone.NIGHT)
-                else applyZone(DayTimeZone.DAY)
+                if (dayHasModes) {
+                    applyZone(DayTimeZone.DAY)
+                } else if (nightHasModes) {
+                    applyZone(DayTimeZone.NIGHT)
+                } else {
+                    applyZone(DayTimeZone.DAY)
+                }
             }
+
             DayTimeZone.DAY -> {
-                if (nightHasModes) applyZone(DayTimeZone.NIGHT)
-                else applyZone(null)
+                if (nightHasModes) {
+                    applyZone(DayTimeZone.NIGHT)
+                } else {
+                    applyZone(null)
+                }
             }
+
             DayTimeZone.NIGHT -> {
                 applyZone(null)
             }
@@ -149,15 +159,25 @@ class LightControlEngine(
         applyZone(zone)
 
         if (zone != previousZone) {
-            val reason = when (settings.controlMode) {
-                LightControlMode.TIME_BASED -> "Sunrise/Sunset"
-                LightControlMode.AMBIENT_LIGHT -> "Light sensor"
-                LightControlMode.COMBINED -> {
-                    val timeZone = timeController.getCurrentZone()
-                    if (zone != timeZone) "Light sensor" else "Sunrise/Sunset"
+            val reason =
+                when (settings.controlMode) {
+                    LightControlMode.TIME_BASED -> {
+                        "Sunrise/Sunset"
+                    }
+
+                    LightControlMode.AMBIENT_LIGHT -> {
+                        "Light sensor"
+                    }
+
+                    LightControlMode.COMBINED -> {
+                        val timeZone = timeController.getCurrentZone()
+                        if (zone != timeZone) "Light sensor" else "Sunrise/Sunset"
+                    }
+
+                    LightControlMode.MANUAL_ONLY -> {
+                        "Manual"
+                    }
                 }
-                LightControlMode.MANUAL_ONLY -> "Manual"
-            }
             Timber.d("Zone: $previousZone → $zone ($reason)")
             onZoneChange?.invoke(previousZone, zone, reason)
         }
@@ -168,24 +188,32 @@ class LightControlEngine(
         onApplyZone?.invoke(zone)
     }
 
-    private fun determineCurrentZone(): DayTimeZone {
-        return when (settings.controlMode) {
-            LightControlMode.MANUAL_ONLY -> DayTimeZone.DAY
-            LightControlMode.TIME_BASED -> timeController.getCurrentZone()
+    private fun determineCurrentZone(): DayTimeZone =
+        when (settings.controlMode) {
+            LightControlMode.MANUAL_ONLY -> {
+                DayTimeZone.DAY
+            }
+
+            LightControlMode.TIME_BASED -> {
+                timeController.getCurrentZone()
+            }
+
             LightControlMode.AMBIENT_LIGHT -> {
                 ambientLightSensor?.currentLightZone?.value ?: timeController.getCurrentZone()
             }
+
             LightControlMode.COMBINED -> {
                 val timeZone = timeController.getCurrentZone()
                 val sensorZone = ambientLightSensor?.currentLightZone?.value ?: timeZone
                 if (sensorZone.ordinal > timeZone.ordinal) sensorZone else timeZone
             }
         }
-    }
 
     fun updateAmbientSensor() {
         ambientLightSensor?.let {
-            if (settings.controlMode == LightControlMode.AMBIENT_LIGHT || settings.controlMode == LightControlMode.COMBINED) {
+            if (settings.controlMode == LightControlMode.AMBIENT_LIGHT ||
+                settings.controlMode == LightControlMode.COMBINED
+            ) {
                 it.nightThreshold = settings.ambientNightThreshold
                 it.start()
                 startSensorObserving()
@@ -198,13 +226,14 @@ class LightControlEngine(
 
     private fun startSensorObserving() {
         if (sensorObserveJob != null) return
-        sensorObserveJob = scope.launch {
-            ambientLightSensor?.currentLightZone?.collectLatest {
-                if (_state.value == EngineState.AUTO_CONTROL || _state.value == EngineState.MANUAL_OVERRIDE) {
-                    applyAutoMode()
+        sensorObserveJob =
+            scope.launch {
+                ambientLightSensor?.currentLightZone?.collectLatest {
+                    if (_state.value == EngineState.AUTO_CONTROL || _state.value == EngineState.MANUAL_OVERRIDE) {
+                        applyAutoMode()
+                    }
                 }
             }
-        }
     }
 
     private fun stopSensorObserving() {
@@ -233,14 +262,15 @@ class LightControlEngine(
 
     private fun startZoneChecking() {
         zoneCheckJob?.cancel()
-        zoneCheckJob = scope.launch {
-            while (true) {
-                delay(ZONE_CHECK_INTERVAL_MS)
-                if (_state.value == EngineState.AUTO_CONTROL || _state.value == EngineState.MANUAL_OVERRIDE) {
-                    applyAutoMode()
+        zoneCheckJob =
+            scope.launch {
+                while (true) {
+                    delay(ZONE_CHECK_INTERVAL_MS)
+                    if (_state.value == EngineState.AUTO_CONTROL || _state.value == EngineState.MANUAL_OVERRIDE) {
+                        applyAutoMode()
+                    }
                 }
             }
-        }
     }
 
     private fun stopZoneChecking() {

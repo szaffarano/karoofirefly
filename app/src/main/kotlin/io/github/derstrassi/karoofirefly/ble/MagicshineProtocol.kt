@@ -4,7 +4,6 @@ import io.github.derstrassi.karoofirefly.data.LightModeOption
 import io.github.derstrassi.karoofirefly.data.LightModeProvider
 
 object MagicshineProtocol {
-
     const val SERVICE_UUID = "0000FFE1-0000-1000-8000-00805f9b34fb"
     const val CHARACTERISTIC_UUID = "0000FFE0-0000-1000-8000-00805f9b34fb"
 
@@ -44,7 +43,10 @@ object MagicshineProtocol {
         return buildFrame(0xA2.toByte(), 0x01, content)
     }
 
-    fun buildModule2Frame(modeCode: Int, value: Int): ByteArray {
+    fun buildModule2Frame(
+        modeCode: Int,
+        value: Int,
+    ): ByteArray {
         val checksum = value xor (modeCode + 0x04)
         val hex = "DE14A2010200010A01%02X%02X000000000000BB%02XED".format(modeCode, value, checksum)
         return hexStringToBytes(hex)
@@ -52,7 +54,11 @@ object MagicshineProtocol {
 
     val MODULE2_OFF = hexStringToBytes("DE14A20101010100000000000000000000BB0DED")
 
-    private fun buildFrame(type: Byte, status: Byte, content: ByteArray): ByteArray {
+    private fun buildFrame(
+        type: Byte,
+        status: Byte,
+        content: ByteArray,
+    ): ByteArray {
         val totalLen = 6 + content.size
         val frame = ByteArray(totalLen)
         frame[0] = 0xDE.toByte()
@@ -72,11 +78,9 @@ object MagicshineProtocol {
 
     fun buildQuery(type: Byte): ByteArray = buildFrame(type, 0x00, byteArrayOf())
 
-    fun hexStringToBytes(hex: String): ByteArray =
-        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    fun hexStringToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
-    fun bytesToHex(bytes: ByteArray): String =
-        bytes.joinToString("") { "%02X".format(it) }
+    fun bytesToHex(bytes: ByteArray): String = bytes.joinToString("") { "%02X".format(it) }
 }
 
 enum class MagicshineModuleType { M1, M2 }
@@ -86,9 +90,11 @@ data class MagicshineDeviceConfig(
     val modes: List<LightModeOption>,
 ) {
     fun buildCommand(modeId: String): ByteArray? {
-        if (modeId == "OFF") return when (moduleType) {
-            MagicshineModuleType.M1 -> MagicshineProtocol.buildOffCommand(1)
-            MagicshineModuleType.M2 -> MagicshineProtocol.MODULE2_OFF
+        if (modeId == "OFF") {
+            return when (moduleType) {
+                MagicshineModuleType.M1 -> MagicshineProtocol.buildOffCommand(1)
+                MagicshineModuleType.M2 -> MagicshineProtocol.MODULE2_OFF
+            }
         }
         val parts = modeId.split("_", limit = 2)
         if (parts.size != 2) return null
@@ -96,21 +102,24 @@ data class MagicshineDeviceConfig(
 
         return when (moduleType) {
             MagicshineModuleType.M1 -> {
-                val model = when (parts[0]) {
-                    "STEADY" -> MagicshineProtocol.MODE_STEADY
-                    "FLASH" -> MagicshineProtocol.MODE_FAST_FLASH
-                    "SOS" -> MagicshineProtocol.MODE_SOS
-                    else -> return null
-                }
+                val model =
+                    when (parts[0]) {
+                        "STEADY" -> MagicshineProtocol.MODE_STEADY
+                        "FLASH" -> MagicshineProtocol.MODE_FAST_FLASH
+                        "SOS" -> MagicshineProtocol.MODE_SOS
+                        else -> return null
+                    }
                 MagicshineProtocol.buildBrightCommand(1, 1, model, bright)
             }
+
             MagicshineModuleType.M2 -> {
-                val modeCode = when (parts[0]) {
-                    "STEADY" -> 0x01
-                    "FLASH" -> 0x03
-                    "SOS" -> 0x02
-                    else -> return null
-                }
+                val modeCode =
+                    when (parts[0]) {
+                        "STEADY" -> 0x01
+                        "FLASH" -> 0x03
+                        "SOS" -> 0x02
+                        else -> return null
+                    }
                 MagicshineProtocol.buildModule2Frame(modeCode, bright)
             }
         }
@@ -123,11 +132,12 @@ data class MagicshineDeviceConfig(
             // The digit after "M" is the device's lamp group count; only single-group
             // devices use the M1 layout. See Magicshine app, FrontBikeLightActivity:580.
             val lampGroups = bleName.getOrNull(1)?.digitToIntOrNull()
-            val moduleType = if (lampGroups == 1) {
-                MagicshineModuleType.M1
-            } else {
-                MagicshineModuleType.M2
-            }
+            val moduleType =
+                if (lampGroups == 1) {
+                    MagicshineModuleType.M1
+                } else {
+                    MagicshineModuleType.M2
+                }
 
             val modes = mutableListOf(LightModeOption("OFF", "Off"))
             for (b in BRIGHTNESS_STEPS) {
@@ -145,6 +155,8 @@ data class MagicshineDeviceConfig(
     }
 }
 
-class MagicshineDeviceModeProvider(private val config: MagicshineDeviceConfig) : LightModeProvider {
+class MagicshineDeviceModeProvider(
+    private val config: MagicshineDeviceConfig,
+) : LightModeProvider {
     override fun availableModes(): List<LightModeOption> = config.modes
 }

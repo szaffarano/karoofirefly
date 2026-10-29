@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 class LightStatusDataType(
     private val engine: LightControlEngine,
 ) : DataTypeImpl("karoo-light-controller", "light-status") {
-
     companion object {
         const val FIELD_ZONE = "zone"
         const val FIELD_ACTIVE = "active"
@@ -52,7 +51,11 @@ class LightStatusDataType(
         emitter.setCancellable { scope.cancel() }
     }
 
-    override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
+    override fun startView(
+        context: Context,
+        config: ViewConfig,
+        emitter: ViewEmitter,
+    ) {
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -66,10 +69,11 @@ class LightStatusDataType(
             }.distinctUntilChanged().collect { (activeZone, state) ->
                 val remoteViews = RemoteViews(context.packageName, R.layout.light_status_view)
 
-                val modeText = when (state) {
-                    LightControlEngine.EngineState.IDLE -> "Lights Off"
-                    else -> if (activeZone != null) "Zone: ${activeZone.name}" else "Lights Off"
-                }
+                val modeText =
+                    when (state) {
+                        LightControlEngine.EngineState.IDLE -> "Lights Off"
+                        else -> if (activeZone != null) "Zone: ${activeZone.name}" else "Lights Off"
+                    }
 
                 remoteViews.setTextViewText(R.id.light_mode_text, modeText)
                 remoteViews.setTextViewText(R.id.light_battery_text, engine.currentZone.value.name)

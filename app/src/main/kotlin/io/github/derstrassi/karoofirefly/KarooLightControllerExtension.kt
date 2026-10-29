@@ -1,29 +1,29 @@
 package io.github.derstrassi.karoofirefly
 
-import io.hammerhead.karooext.KarooSystemService
-import io.hammerhead.karooext.extension.KarooExtension
-import io.hammerhead.karooext.models.InRideAlert
-import io.hammerhead.karooext.models.PlayBeepPattern
-import io.hammerhead.karooext.models.OnLocationChanged
-import io.hammerhead.karooext.models.ReleaseBluetooth
-import io.hammerhead.karooext.models.RequestBluetooth
-import io.hammerhead.karooext.models.DataType
-import io.hammerhead.karooext.models.OnStreamState
-import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.RideState
-import io.hammerhead.karooext.models.SavedDevices
 import io.github.derstrassi.karoofirefly.ble.MagicshineBleController
-import io.github.derstrassi.karoofirefly.karoo.KarooLightControl
 import io.github.derstrassi.karoofirefly.data.DayTimeZone
 import io.github.derstrassi.karoofirefly.data.LightProtocol
 import io.github.derstrassi.karoofirefly.data.LightRole
-import io.github.derstrassi.karoofirefly.data.modeProviderFor
 import io.github.derstrassi.karoofirefly.data.PreferencesRepository
-import io.github.derstrassi.karoofirefly.light.LightController
+import io.github.derstrassi.karoofirefly.data.modeProviderFor
 import io.github.derstrassi.karoofirefly.datatypes.LightStatusDataType
 import io.github.derstrassi.karoofirefly.engine.AmbientLightSensor
 import io.github.derstrassi.karoofirefly.engine.LightControlEngine
 import io.github.derstrassi.karoofirefly.engine.TimeBasedController
+import io.github.derstrassi.karoofirefly.karoo.KarooLightControl
+import io.github.derstrassi.karoofirefly.light.LightController
+import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.extension.KarooExtension
+import io.hammerhead.karooext.models.DataType
+import io.hammerhead.karooext.models.InRideAlert
+import io.hammerhead.karooext.models.OnLocationChanged
+import io.hammerhead.karooext.models.OnStreamState
+import io.hammerhead.karooext.models.PlayBeepPattern
+import io.hammerhead.karooext.models.ReleaseBluetooth
+import io.hammerhead.karooext.models.RequestBluetooth
+import io.hammerhead.karooext.models.RideState
+import io.hammerhead.karooext.models.SavedDevices
+import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.time.Duration.Companion.milliseconds
 
 data class DiscoveredLight(
     val id: String,
@@ -46,7 +47,6 @@ data class DiscoveredLight(
 )
 
 class KarooLightControllerExtension : KarooExtension("karoo-light-controller", BuildConfig.VERSION_NAME) {
-
     companion object {
         const val TAG = "LightController"
         private const val BIKE_LIGHT_DATA_TYPE = "TYPE_BIKE_LIGHT_ID"
@@ -54,6 +54,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
 
         @Volatile
         private var instance: KarooLightControllerExtension? = null
+
         fun getInstance(): KarooLightControllerExtension? = instance
     }
 
@@ -70,16 +71,19 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
     internal lateinit var engine: LightControlEngine
     internal lateinit var repository: PreferencesRepository
 
-    private val _antLights = MutableStateFlow<List<DiscoveredLight>>(emptyList())
+    private val antLights = MutableStateFlow<List<DiscoveredLight>>(emptyList())
     private val _discoveredLights = MutableStateFlow<List<DiscoveredLight>>(emptyList())
     val discoveredLights: StateFlow<List<DiscoveredLight>> = _discoveredLights
 
     private var savedDevicesConsumerId: String? = null
     private var radarConsumerId: String? = null
+
     @Volatile private var radarThreatActive = false
     private var bleStartJob: kotlinx.coroutines.Job? = null
     private var discoveryPollingJob: kotlinx.coroutines.Job? = null
+
     @Volatile private var settingsUiActive = false
+
     @Volatile private var rideActive = false
 
     private val extensionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -115,7 +119,9 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         }
 
         engine.onZoneChange = { oldZone, newZone, reason ->
-            if (engine.settings.zoneNotificationsEnabled && engine.state.value != LightControlEngine.EngineState.IDLE && engine.settings.lightAssignments.isNotEmpty()) {
+            if (engine.settings.zoneNotificationsEnabled && engine.state.value != LightControlEngine.EngineState.IDLE &&
+                engine.settings.lightAssignments.isNotEmpty()
+            ) {
                 playNotificationSound()
                 karooSystem.dispatch(
                     InRideAlert(
@@ -133,7 +139,11 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
 
         // Merge ANT+ and BLE discovered lights
         extensionScope.launch {
-            combine(_antLights, magicshineController.discoveredLights, lightControl.connectionStates) { ant, ble, connStates ->
+            combine(
+                antLights,
+                magicshineController.discoveredLights,
+                lightControl.connectionStates,
+            ) { ant, ble, connStates ->
                 ant.map { it.copy(connected = connStates[it.id] == "CONNECTED") } + ble
             }.collect { merged ->
                 _discoveredLights.value = merged
@@ -163,7 +173,6 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         karooSystem.addConsumer<RideState> { state ->
             handleRideState(state)
         }
-
     }
 
     private fun handleRideState(state: RideState) {
@@ -178,7 +187,11 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                 startBleIfNeeded()
                 updateRadarMonitoring()
             }
-            is RideState.Paused -> engine.onRidePause()
+
+            is RideState.Paused -> {
+                engine.onRidePause()
+            }
+
             is RideState.Idle -> {
                 rideActive = false
                 stopDiscoveryPolling()
@@ -207,18 +220,21 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
     }
 
     private fun syncBleAssignments() {
-        magicshineController.assignedDeviceIds = engine.settings.lightAssignments
-            .filter { it.protocol == LightProtocol.BLE }
-            .map { it.deviceId }
-            .toSet()
+        magicshineController.assignedDeviceIds =
+            engine.settings.lightAssignments
+                .filter { it.protocol == LightProtocol.BLE }
+                .map { it.deviceId }
+                .toSet()
     }
 
-    fun testMode(deviceId: String, modeName: String) {
+    fun testMode(
+        deviceId: String,
+        modeName: String,
+    ) {
         val assignment = engine.settings.lightAssignments.find { it.deviceId == deviceId } ?: return
-        val effectiveMode = modeName
         extensionScope.launch {
-            lightControllers[assignment.protocol]?.setMode(deviceId, effectiveMode)
-            kotlinx.coroutines.delay(3000)
+            lightControllers[assignment.protocol]?.setMode(deviceId, modeName)
+            kotlinx.coroutines.delay(3000.milliseconds)
             lightControllers[assignment.protocol]?.setMode(deviceId, "OFF")
         }
     }
@@ -256,17 +272,18 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
 
     private fun startDiscoveryPolling() {
         if (discoveryPollingJob != null) return
-        discoveryPollingJob = extensionScope.launch {
-            while (true) {
-                discoverKarooLights()
-                if (allAssignedBleConnected()) {
-                    Timber.d("$TAG: All assigned lights connected, stopping discovery polling")
-                    break
+        discoveryPollingJob =
+            extensionScope.launch {
+                while (true) {
+                    discoverKarooLights()
+                    if (allAssignedBleConnected()) {
+                        Timber.d("$TAG: All assigned lights connected, stopping discovery polling")
+                        break
+                    }
+                    kotlinx.coroutines.delay(10_000.milliseconds)
                 }
-                kotlinx.coroutines.delay(10_000)
+                discoveryPollingJob = null
             }
-            discoveryPollingJob = null
-        }
     }
 
     private fun stopDiscoveryPolling() {
@@ -274,34 +291,34 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         discoveryPollingJob = null
     }
 
-    private fun hasBleAssignments(): Boolean =
-        engine.settings.lightAssignments.any { it.protocol == LightProtocol.BLE }
+    private fun hasBleAssignments(): Boolean = engine.settings.lightAssignments.any { it.protocol == LightProtocol.BLE }
 
     private fun startBleIfNeeded() {
         Timber.d("$TAG: startBleIfNeeded: settingsUiActive=$settingsUiActive, hasBleAssignments=${hasBleAssignments()}")
         if (settingsUiActive || hasBleAssignments()) {
             bleStartJob?.cancel()
-            bleStartJob = extensionScope.launch {
-                kotlinx.coroutines.delay(2000)
-                // Always hold Bluetooth while a BLE light is assigned so the supervisor can
-                // reconnect a known light without a scan. Only run the scanner when a light
-                // still needs discovering (or the settings UI is open), otherwise it would
-                // scan for the whole ride even though everything is already connected.
-                karooSystem.dispatch(RequestBluetooth(extension))
-                // Assigned lights connect directly by their bonded address. This works even
-                // when the light is on but idle and no longer advertising (Magicshine stops
-                // advertising when idle), which scan-based discovery cannot handle — and it
-                // needs no scanner, so there is no scan battery cost during a ride.
-                for (id in magicshineController.assignedDeviceIds) {
-                    magicshineController.connect(id)
+            bleStartJob =
+                extensionScope.launch {
+                    kotlinx.coroutines.delay(2000.milliseconds)
+                    // Always hold Bluetooth while a BLE light is assigned so the supervisor can
+                    // reconnect a known light without a scan. Only run the scanner when a light
+                    // still needs discovering (or the settings UI is open), otherwise it would
+                    // scan for the whole ride even though everything is already connected.
+                    karooSystem.dispatch(RequestBluetooth(extension))
+                    // Assigned lights connect directly by their bonded address. This works even
+                    // when the light is on but idle and no longer advertising (Magicshine stops
+                    // advertising when idle), which scan-based discovery cannot handle — and it
+                    // needs no scanner, so there is no scan battery cost during a ride.
+                    for (id in magicshineController.assignedDeviceIds) {
+                        magicshineController.connect(id)
+                    }
+                    // The scanner is only needed to discover NEW, not-yet-assigned lights, so run
+                    // it only while the settings UI is open — never for a whole ride.
+                    if (settingsUiActive) {
+                        Timber.d("$TAG: Starting BLE discovery")
+                        magicshineController.startDiscovery()
+                    }
                 }
-                // The scanner is only needed to discover NEW, not-yet-assigned lights, so run
-                // it only while the settings UI is open — never for a whole ride.
-                if (settingsUiActive) {
-                    Timber.d("$TAG: Starting BLE discovery")
-                    magicshineController.startDiscovery()
-                }
-            }
         }
     }
 
@@ -319,63 +336,82 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         savedDevicesConsumerId?.let { karooSystem.removeConsumer(it) }
         extensionScope.launch {
             Timber.d("$TAG: Querying Karoo for saved bike light devices")
-            savedDevicesConsumerId = karooSystem.addConsumer<SavedDevices> { savedDevices ->
-                val lights = savedDevices.devices.filter { device ->
-                    device.supportedDataTypes.contains(BIKE_LIGHT_DATA_TYPE) && device.enabled
-                }.filter { device ->
-                    val parts = device.id.split("-")
-                    parts.size >= 3 && parts[1].toIntOrNull() == DEVICE_TYPE_BIKE_LIGHT
-                }
+            savedDevicesConsumerId =
+                karooSystem.addConsumer<SavedDevices> { savedDevices ->
+                    val lights =
+                        savedDevices.devices
+                            .filter { device ->
+                                device.supportedDataTypes.contains(BIKE_LIGHT_DATA_TYPE) && device.enabled
+                            }.filter { device ->
+                                val parts = device.id.split("-")
+                                parts.size >= 3 && parts[1].toIntOrNull() == DEVICE_TYPE_BIKE_LIGHT
+                            }
 
-                antDeviceCache = lights.map { device ->
-                    val batteryText = device.details.lastBattery?.name
-                    val batteryPercent = when (batteryText) {
-                        "GOOD" -> 80
-                        "OK" -> 50
-                        "LOW" -> 20
-                        "CRITICAL" -> 5
-                        else -> null
+                    antDeviceCache =
+                        lights.map { device ->
+                            val batteryText = device.details.lastBattery?.name
+                            val batteryPercent =
+                                when (batteryText) {
+                                    "GOOD" -> 80
+                                    "OK" -> 50
+                                    "LOW" -> 20
+                                    "CRITICAL" -> 5
+                                    else -> null
+                                }
+                            AntDeviceInfo(device.id, device.name, device.details.manufacturer, batteryPercent)
+                        }
+                    updateAntLights()
+
+                    Timber.d(
+                        "$TAG: Found ${antDeviceCache.size} ANT+ bike light(s): ${antDeviceCache.joinToString {
+                            "${it.name} (${it.id})"
+                        }}",
+                    )
+
+                    for ((id) in antDeviceCache) {
+                        lightControl.registerConnectionState(id)
+                        lightControl.registerForLightParameters(id)
                     }
-                    AntDeviceInfo(device.id, device.name, device.details.manufacturer, batteryPercent)
                 }
-                updateAntLights()
-
-                Timber.d("$TAG: Found ${antDeviceCache.size} ANT+ bike light(s): ${antDeviceCache.joinToString { "${it.name} (${it.id})" }}")
-
-                for (device in antDeviceCache) {
-                    lightControl.registerConnectionState(device.id)
-                    lightControl.registerForLightParameters(device.id)
-                }
-            }
         }
     }
 
-    private data class AntDeviceInfo(val id: String, val name: String, val manufacturer: String?, val batteryPercent: Int?)
+    private data class AntDeviceInfo(
+        val id: String,
+        val name: String,
+        val manufacturer: String?,
+        val batteryPercent: Int?,
+    )
+
     private var antDeviceCache = listOf<AntDeviceInfo>()
 
     private fun updateAntLights() {
-        _antLights.value = antDeviceCache.map { device ->
-            DiscoveredLight(
-                id = device.id,
-                name = device.name,
-                manufacturer = device.manufacturer,
-                connected = lightControl.connectionStates.value[device.id] == "CONNECTED",
-                batteryPercent = device.batteryPercent,
-            )
-        }
+        antLights.value =
+            antDeviceCache.map { device ->
+                DiscoveredLight(
+                    id = device.id,
+                    name = device.name,
+                    manufacturer = device.manufacturer,
+                    connected = lightControl.connectionStates.value[device.id] == "CONNECTED",
+                    batteryPercent = device.batteryPercent,
+                )
+            }
     }
 
     private fun buildModeDetail(zone: DayTimeZone?): String {
         if (zone == null) return "Lights Off"
         return engine.settings.lightAssignments.joinToString("\n") {
-            val roleLabel = when (it.role) {
-                LightRole.FRONT -> "F"
-                LightRole.REAR -> "R"
-            }
+            val roleLabel =
+                when (it.role) {
+                    LightRole.FRONT -> "F"
+                    LightRole.REAR -> "R"
+                }
             val modeId = it.modeForZone(zone)
-            val displayName = modeProviderFor(it.protocol, it.deviceId)
-                .availableModes()
-                .find { m -> m.id == modeId }?.displayName ?: modeId
+            val displayName =
+                modeProviderFor(it.protocol, it.deviceId)
+                    .availableModes()
+                    .find { m -> m.id == modeId }
+                    ?.displayName ?: modeId
             "$roleLabel: $displayName"
         }
     }
@@ -397,6 +433,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                     ),
                 )
             }
+
             "cycle-mode" -> {
                 engine.onCycleMode()
                 karooSystem.dispatch(
@@ -436,15 +473,16 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
     private fun startRadarMonitoring() {
         if (radarConsumerId != null) return
         Timber.d("$TAG: Starting radar monitoring")
-        radarConsumerId = karooSystem.addConsumer(
-            OnStreamState.StartStreaming(DataType.Type.RADAR),
-        ) { event: OnStreamState ->
-            if (event.state is StreamState.Streaming) {
-                val values = (event.state as StreamState.Streaming).dataPoint.values
-                val threat = values[DataType.Field.RADAR_THREAT_LEVEL]?.toInt() ?: 0
-                onRadarThreat(threat > 0)
+        radarConsumerId =
+            karooSystem.addConsumer(
+                OnStreamState.StartStreaming(DataType.Type.RADAR),
+            ) { event: OnStreamState ->
+                if (event.state is StreamState.Streaming) {
+                    val values = (event.state as StreamState.Streaming).dataPoint.values
+                    val threat = values[DataType.Field.RADAR_THREAT_LEVEL]?.toInt() ?: 0
+                    onRadarThreat(threat > 0)
+                }
             }
-        }
     }
 
     private fun stopRadarMonitoring() {

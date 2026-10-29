@@ -13,16 +13,18 @@ import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "light_controller_settings")
 
-class PreferencesRepository(private val context: Context) {
-
+class PreferencesRepository(
+    private val context: Context,
+) {
     companion object {
         private val SETTINGS_KEY = stringPreferencesKey("settings")
         private val json = Json { ignoreUnknownKeys = true }
     }
 
-    val settingsFlow: Flow<LightControllerSettings> = context.dataStore.data.map { preferences ->
-        getCurrentSettings(preferences)
-    }
+    val settingsFlow: Flow<LightControllerSettings> =
+        context.dataStore.data.map { preferences ->
+            getCurrentSettings(preferences)
+        }
 
     suspend fun updateSettings(settings: LightControllerSettings) {
         context.dataStore.edit { preferences ->

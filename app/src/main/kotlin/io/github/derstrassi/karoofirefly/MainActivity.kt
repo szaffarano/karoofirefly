@@ -14,31 +14,33 @@ import androidx.lifecycle.lifecycleScope
 import io.github.derstrassi.karoofirefly.data.LightControllerSettings
 import io.github.derstrassi.karoofirefly.data.PreferencesRepository
 import io.github.derstrassi.karoofirefly.engine.AmbientLightSensor
+import io.github.derstrassi.karoofirefly.ui.screens.SettingsScreen
+import io.github.derstrassi.karoofirefly.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import io.github.derstrassi.karoofirefly.ui.screens.SettingsScreen
-import io.github.derstrassi.karoofirefly.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : ComponentActivity() {
-
     private lateinit var repository: PreferencesRepository
     private lateinit var luxSensor: AmbientLightSensor
     private var ownsLuxSensor = false
 
-    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-        if (results.values.all { it }) {
-            KarooLightControllerExtension.getInstance()?.setSettingsUiActive(true)
+    private val permissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            if (results.values.all { it }) {
+                KarooLightControllerExtension.getInstance()?.setSettingsUiActive(true)
+            }
         }
-    }
 
     private fun ensureBlePermissions() {
-        val perms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
-        } else {
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
+        val perms =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+            } else {
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         if (perms.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
             permissionLauncher.launch(perms)
         }
@@ -58,27 +60,28 @@ class MainActivity : ComponentActivity() {
             luxSensor.start()
         }
 
-        @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-        val extensionFlow = flow {
-            while (true) {
-                val instance = KarooLightControllerExtension.getInstance()
-                if (instance != null) {
-                    emit(instance)
-                    return@flow
+        val extensionFlow =
+            flow {
+                while (true) {
+                    val instance = KarooLightControllerExtension.getInstance()
+                    if (instance != null) {
+                        emit(instance)
+                        return@flow
+                    }
+                    delay(500.milliseconds)
                 }
-                delay(500)
             }
-        }
 
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-        val luxFlow = extensionFlow.flatMapLatest {
-            it.setSettingsUiActive(true)
-            if (ownsLuxSensor) {
-                luxSensor.stop()
-                ownsLuxSensor = false
+        val luxFlow =
+            extensionFlow.flatMapLatest {
+                it.setSettingsUiActive(true)
+                if (ownsLuxSensor) {
+                    luxSensor.stop()
+                    ownsLuxSensor = false
+                }
+                it.ambientLightSensor.currentLux
             }
-            it.ambientLightSensor.currentLux
-        }
 
         val initialLux = luxSensor.currentLux.value
         setContent {
@@ -86,8 +89,12 @@ class MainActivity : ComponentActivity() {
                 val settings by repository.settingsFlow.collectAsState(initial = LightControllerSettings())
 
                 val luxValue by luxFlow.collectAsState(initial = initialLux)
-                val lights = KarooLightControllerExtension.getInstance()
-                    ?.discoveredLights?.collectAsState(initial = emptyList())?.value ?: emptyList()
+                val lights =
+                    KarooLightControllerExtension
+                        .getInstance()
+                        ?.discoveredLights
+                        ?.collectAsState(initial = emptyList())
+                        ?.value ?: emptyList()
 
                 SettingsScreen(
                     settings = settings,
@@ -108,9 +115,10 @@ class MainActivity : ComponentActivity() {
                     },
                     onUpdateAssignment = { deviceId, updated ->
                         lifecycleScope.launch {
-                            val newAssignments = settings.lightAssignments
-                                .filter { it.deviceId != deviceId }
-                                .let { list -> if (updated != null) list + updated else list }
+                            val newAssignments =
+                                settings.lightAssignments
+                                    .filter { it.deviceId != deviceId }
+                                    .let { list -> if (updated != null) list + updated else list }
                             val newSettings = settings.copy(lightAssignments = newAssignments)
                             repository.updateSettings(newSettings)
                             KarooLightControllerExtension.getInstance()?.let { ext ->

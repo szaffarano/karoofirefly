@@ -16,8 +16,9 @@ import timber.log.Timber
  * Provides smoothed lux readings and a categorized light level with hysteresis
  * to avoid rapid zone switching.
  */
-class AmbientLightSensor(context: Context) : SensorEventListener {
-
+class AmbientLightSensor(
+    context: Context,
+) : SensorEventListener {
     companion object {
         private const val SMOOTHING_WINDOW_SIZE = 10 // ~2s at ~5Hz sensor rate
         private const val MIN_DWELL_TIME_MS = 10_000L // minimum time before zone can change
@@ -81,11 +82,12 @@ class AmbientLightSensor(context: Context) : SensorEventListener {
         if (newZone != currentZone) {
             // NIGHT→DAY is held off longer so brief bright patches (e.g. gaps in a
             // tree-lined avenue) don't flip the zone back; DAY→NIGHT stays responsive.
-            val required = if (currentZone == DayTimeZone.NIGHT && newZone == DayTimeZone.DAY) {
-                DAY_LOCKOUT_MS
-            } else {
-                MIN_DWELL_TIME_MS
-            }
+            val required =
+                if (currentZone == DayTimeZone.NIGHT && newZone == DayTimeZone.DAY) {
+                    DAY_LOCKOUT_MS
+                } else {
+                    MIN_DWELL_TIME_MS
+                }
             if ((now - lastZoneChangeTime) >= required) {
                 Timber.d("AmbientLightSensor: zone change $currentZone → $newZone (lux=$smoothedLux)")
                 _currentLightZone.value = newZone
@@ -94,11 +96,12 @@ class AmbientLightSensor(context: Context) : SensorEventListener {
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+    override fun onAccuracyChanged(
+        sensor: Sensor?,
+        accuracy: Int,
+    ) {
         // not used
     }
 
-    private fun categorize(lux: Float): DayTimeZone {
-        return if (lux < nightThreshold) DayTimeZone.NIGHT else DayTimeZone.DAY
-    }
+    private fun categorize(lux: Float): DayTimeZone = if (lux < nightThreshold) DayTimeZone.NIGHT else DayTimeZone.DAY
 }
