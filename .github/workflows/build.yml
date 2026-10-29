@@ -38,7 +38,7 @@ jobs:
 
       - name: Upload lint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-report
           path: app/build/reports/lint-results-release.*
@@ -63,7 +63,7 @@ jobs:
           echo "APK_NAME=karoo-light-controller-${VERSION}.apk" >> "$GITHUB_ENV"
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karoo-light-controller
           path: ${{ env.APK_NAME }}
