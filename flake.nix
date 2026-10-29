@@ -1,5 +1,5 @@
 {
-  description = "KarooFireFly Android dev shell (SDK + JDK 17)";
+  description = "KarooFireFly Android dev shell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -42,14 +42,14 @@
         commonEnv = {
           ANDROID_HOME = sdkRoot;
           ANDROID_SDK_ROOT = sdkRoot;
-          JAVA_HOME = "${pkgs.temurin-bin-17}";
-          GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${aapt2}";
+          JAVA_HOME = "${pkgs.temurin-bin-25}";
+          GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${aapt2} --enable-native-access=ALL-UNNAMED";
         };
       in {
         devShells.default = pkgs.mkShell (commonEnv
           // {
             packages = [
-              pkgs.temurin-bin-17
+              pkgs.temurin-bin-25
               androidSdk
             ];
           });
@@ -59,7 +59,7 @@
         devShells.studio = pkgs.mkShell (commonEnv
           // {
             packages = [
-              pkgs.temurin-bin-17
+              pkgs.temurin-bin-25
               androidSdk
               pkgs.android-studio
             ];

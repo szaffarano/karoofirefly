@@ -328,7 +328,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                 }
 
                 antDeviceCache = lights.map { device ->
-                    val batteryText = device.details?.lastBattery?.name
+                    val batteryText = device.details.lastBattery?.name
                     val batteryPercent = when (batteryText) {
                         "GOOD" -> 80
                         "OK" -> 50
@@ -336,7 +336,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                         "CRITICAL" -> 5
                         else -> null
                     }
-                    AntDeviceInfo(device.id, device.name, device.details?.manufacturer, batteryPercent)
+                    AntDeviceInfo(device.id, device.name, device.details.manufacturer, batteryPercent)
                 }
                 updateAntLights()
 
