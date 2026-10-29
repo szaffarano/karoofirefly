@@ -30,7 +30,7 @@ jobs:
         env:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.KAROO_EXT_TOKEN }}
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
+        run: ./gradlew spotlessCheck detekt testDebugUnitTest lintDebug assembleDebug
 
       - name: Upload lint report
         if: always()
