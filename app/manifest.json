@@ -1,11 +1,11 @@
 {
-  "label": "KarooFireFly",
-  "packageName": "io.github.szaffarano.karoofirefly",
-  "iconUrl": "https://raw.githubusercontent.com/szaffarano/karoofirefly/main/docs/ic_firefly.svg",
-  "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/download/v0.6.1/karoo-light-controller-0.6.1.apk",
-  "latestVersion": "0.6.1",
-  "latestVersionCode": 160,
-  "developer": "Sebastián Zaffarano",
-  "description": "Automatic smart bike light control based on time of day and ambient light. Supports ANT+ lights (via Karoo pairing) and Magicshine BLE lights (via Bluetooth). Per-light configuration with protocol-specific modes, time-based and ambient light sensor automation, radar warn flash for rear lights, zone change notifications, and manual override via BonusActions.",
-  "releaseNotes": "* Maintenance release — no functional changes\n* Updated build toolchain: Android Gradle Plugin 9.5, Kotlin 2.4, compileSdk 37\n* Updated Jetpack Compose (1.12), Material3 (1.4), Glance (1.2) and other AndroidX libraries"
+    "label": "KarooFireFly",
+    "packageName": "io.github.szaffarano.karoofirefly",
+    "iconUrl": "https://raw.githubusercontent.com/szaffarano/karoofirefly/main/docs/ic_firefly.svg",
+    "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/latest/download/karoo-light-controller.apk",
+    "latestVersion": "0.6.1",
+    "latestVersionCode": 161,
+    "developer": "Sebasti\u00e1n Zaffarano",
+    "description": "Automatic smart bike light control based on time of day and ambient light. Supports ANT+ lights (via Karoo pairing) and Magicshine BLE lights (via Bluetooth). Per-light configuration with protocol-specific modes, time-based and ambient light sensor automation, radar warn flash for rear lights, zone change notifications, and manual override via BonusActions.",
+    "releaseNotes": "* Maintenance release \u2014 no functional changes\n* Updated build toolchain: Android Gradle Plugin 9.5, Kotlin 2.4, compileSdk 37\n* Updated Jetpack Compose (1.12), Material3 (1.4), Glance (1.2) and other AndroidX libraries"
 }

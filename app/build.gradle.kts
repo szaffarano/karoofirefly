@@ -14,18 +14,6 @@ fun gitShortSha(): String = try {
     "unknown"
 }
 
-// Monotonic version code derived from the commit count. Requires full git
-// history — CI must check out with fetch-depth: 0 (a shallow clone returns 1).
-fun gitCommitCount(): Int = try {
-    val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
-        .directory(rootDir)
-        .redirectErrorStream(true)
-        .start()
-    process.inputStream.bufferedReader().readText().trim().toInt()
-} catch (e: Exception) {
-    1
-}
-
 android {
     namespace = "io.github.derstrassi.karoofirefly"
     compileSdk = 37
@@ -34,7 +22,8 @@ android {
         applicationId = "io.github.szaffarano.karoofirefly"
         minSdk = 24
         targetSdk = 35
-        versionCode = gitCommitCount()
+        // Bumped by the prepare-release skill. Must stay monotonically increasing.
+        versionCode = 161
         versionName = "0.6.1"
         buildConfigField("String", "GIT_SHA", "\"${gitShortSha()}\"")
     }
@@ -99,4 +88,23 @@ dependencies {
     // ANT Android SDK - place ant-lib.aar in app/libs/
     // Download from: https://github.com/ant-wireless/ANT-Android-SDKs
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
+}
+
+// Regenerates app/manifest.json from the current version and RELEASE_NOTES env var.
+// The APK URL is static (/releases/latest/download/...) so it never needs updating.
+// Invoked by the prepare-release skill; release notes come from RELEASE_NOTES.
+tasks.register("generateManifest") {
+    group = "release"
+    description = "Regenerate app/manifest.json from the current version and RELEASE_NOTES"
+    doLast {
+        val manifestFile = file("manifest.json")
+        @Suppress("UNCHECKED_CAST")
+        val json = groovy.json.JsonSlurper().parse(manifestFile) as MutableMap<String, Any?>
+        json["latestVersion"] = android.defaultConfig.versionName
+        json["latestVersionCode"] = android.defaultConfig.versionCode
+        json["latestApkUrl"] =
+            "https://github.com/szaffarano/karoofirefly/releases/latest/download/karoo-light-controller.apk"
+        System.getenv("RELEASE_NOTES")?.takeIf { it.isNotBlank() }?.let { json["releaseNotes"] = it }
+        manifestFile.writeText(groovy.json.JsonBuilder(json).toPrettyString() + "\n")
+    }
 }

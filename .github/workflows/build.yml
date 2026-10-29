@@ -1,94 +1,40 @@
-name: Build
+name: CI
 
 on:
   push:
-    branches: ['**']
-    tags: ['v*']
+    branches: [main]
   pull_request:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0  # full history so gitCommitCount() (versionCode) is correct
 
-      - name: Set up JDK 17
+      - name: Setup JDK
         uses: actions/setup-java@v6
         with:
-          java-version: '25'
-          distribution: 'temurin'
+          java-version: "25"
+          distribution: "temurin"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "${{ runner.temp }}/release.jks"
-
-      - name: Run lint
+      - name: Build and test
         env:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.KAROO_EXT_TOKEN }}
-        run: ./gradlew lintRelease
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
 
       - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: lint-report
-          path: app/build/reports/lint-results-release.*
-
-      - name: Build release APK
-        env:
-          USERNAME: ${{ github.actor }}
-          TOKEN: ${{ secrets.KAROO_EXT_TOKEN }}
-          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
-
-      - name: Rename APK
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then
-            VERSION="${GITHUB_SHA::7}"
-          fi
-          cp app/build/outputs/apk/release/app-release.apk "karoo-light-controller-${VERSION}.apk"
-          echo "APK_NAME=karoo-light-controller-${VERSION}.apk" >> "$GITHUB_ENV"
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: karoo-light-controller
-          path: ${{ env.APK_NAME }}
-
-      - name: Update manifest.json with release URL
-        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          TAG="${GITHUB_REF_NAME}"
-          REPO="${GITHUB_REPOSITORY}"
-          VERSION_CODE="$(git rev-list --count HEAD)"
-          APK_URL="https://github.com/${REPO}/releases/download/${TAG}/karoo-light-controller-${VERSION}.apk"
-          cd app
-          jq --arg url "$APK_URL" --arg ver "$VERSION" --argjson vc "$VERSION_CODE" \
-            '.latestApkUrl = $url | .latestVersion = $ver | .latestVersionCode = $vc' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
-          cd ..
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add app/manifest.json
-          git diff --cached --quiet || git commit -m "Update manifest for ${TAG}" && git push origin HEAD:main
-
-      - name: Create GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v3
-        with:
-          files: ${{ env.APK_NAME }}
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          generate_release_notes: true
+          path: app/build/reports/lint-results-debug.*
