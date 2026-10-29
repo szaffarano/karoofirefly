@@ -54,5 +54,4 @@ compose-ui = [
   "androidx-compose-ui",
   "androidx-compose-material",
   "androidx-compose-ui-tooling-preview",
-  "androidx-compose-ui-tooling",
 ]
