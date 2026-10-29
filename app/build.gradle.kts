@@ -35,7 +35,6 @@ android {
         applicationId = "io.github.szaffarano.karoofirefly"
         minSdk = 24
         targetSdk = 35
-        // Bumped by the prepare-release skill. Must stay monotonically increasing.
         versionCode = 163
         versionName = "0.6.2"
         buildConfigField("String", "GIT_SHA", "\"${gitShortSha()}\"")
@@ -95,6 +94,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.nordic.ble.client)
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
