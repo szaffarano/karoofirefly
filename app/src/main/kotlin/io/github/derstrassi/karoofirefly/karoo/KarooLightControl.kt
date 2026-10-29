@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
+import androidx.core.content.edit
 
 class KarooLightControl(private val context: Context) : LightController {
 
@@ -126,11 +127,10 @@ class KarooLightControl(private val context: Context) : LightController {
             lightCmdBinder = binder
             txRegisterDeviceConnection = BASE_TX_REGISTER_DEVICE_CONNECTION + shift
             txUnregisterDeviceConnection = BASE_TX_UNREGISTER_DEVICE_CONNECTION + shift
-            if (cachedShift != shift) prefs.edit().putInt(PREF_TX_SHIFT, shift).apply()
+            if (cachedShift != shift) prefs.edit { putInt(PREF_TX_SHIFT, shift) }
             Timber.i(
-                "$TAG: SensorService transaction shift=$shift " +
-                    "(getLightCommand=$code, registerDeviceConnection=$txRegisterDeviceConnection), " +
-                    "got LightCommand binder: $binder",
+                "%snull", "$TAG: SensorService transaction shift=$shift " +
+                    "(getLightCommand=$code, registerDeviceConnection=$txRegisterDeviceConnection), ",
             )
             return
         }
@@ -397,7 +397,7 @@ class KarooLightControl(private val context: Context) : LightController {
                 val locationName = parcel.readString()
                 val modesCount = parcel.readInt()
                 val modes = mutableSetOf<String>()
-                for (i in 0 until modesCount) {
+                repeat(modesCount) {
                     val name = parcel.readString()
                     if (name != null && name != "UNKNOWN") {
                         modes.add(name)
