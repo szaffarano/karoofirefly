@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:MagicshineBleController.kt:MagicshineBleController$private fun parseNotification</ID>
+    <ID>CyclomaticComplexMethod:MagicshineProtocol.kt:MagicshineDeviceConfig$fun buildCommand: ByteArray?</ID>
+    <ID>LongMethod:KarooLightControl.kt:KarooLightControl$private fun loadLightModeClass</ID>
+    <ID>LongMethod:KarooLightControllerExtension.kt:KarooLightControllerExtension$override fun onCreate</ID>
+    <ID>LongMethod:MagicshineBleController.kt:MagicshineBleController$private suspend fun attemptConnect: Boolean</ID>
+    <ID>LongMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
+    <ID>LoopWithTooManyJumpStatements:KarooLightControllerExtension.kt:KarooLightControllerExtension$for</ID>
+    <ID>MagicNumber:KarooLightControl.kt:KarooLightControl$0x1FFFC</ID>
+    <ID>MagicNumber:KarooLightControl.kt:KarooLightControl$4</ID>
+    <ID>MagicNumber:KarooLightControl.kt:KarooLightControl$5</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.AUTO$9</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_1$15</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_2$16</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_3$17</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_4$18</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_5$19</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_6$20</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_7$21</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.CUSTOM_8$22</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.FAST_FLASH$7</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.HAZARD$14</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.RANDOM_FLASH$8</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.SIGNAL_LEFT$11</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.SIGNAL_LEFT_AUTO$10</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.SIGNAL_RIGHT$13</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.SIGNAL_RIGHT_AUTO$12</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.SLOW_FLASH$6</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.STEADY_3$3</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.STEADY_HIGH$4</ID>
+    <ID>MagicNumber:LightMode.kt:LightMode.STEADY_LOW$5</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$0xB1</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$0xB4</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$10</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$100</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$120</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$16</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$4</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$40</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$5</ID>
+    <ID>MagicNumber:MagicshineBleController.kt:MagicshineBleController$6</ID>
+    <ID>MagicNumber:MagicshineProtocol.kt:MagicshineProtocol$13</ID>
+    <ID>MagicNumber:MagicshineProtocol.kt:MagicshineProtocol$16</ID>
+    <ID>MagicNumber:MagicshineProtocol.kt:MagicshineProtocol$3</ID>
+    <ID>MagicNumber:MagicshineProtocol.kt:MagicshineProtocol$4</ID>
+    <ID>ReturnCount:KarooLightControl.kt:KarooLightControl$fun setLightMode: Boolean</ID>
+    <ID>ReturnCount:KarooLightControl.kt:KarooLightControl$fun unregisterConnectionState</ID>
+    <ID>ReturnCount:KarooLightControl.kt:KarooLightControl$private fun probeLightCommandBinder: IBinder?</ID>
+    <ID>ReturnCount:LightControlEngine.kt:LightControlEngine$private fun resolveOnZone: DayTimeZone</ID>
+    <ID>ReturnCount:LightProfile.kt:LightControllerSettings$fun migrateProfilesToAssignments: LightControllerSettings</ID>
+    <ID>ReturnCount:MagicshineBleController.kt:MagicshineBleController$@SuppressLint("MissingPermission") // guarded by hasScanPermission() above fun startDiscovery</ID>
+    <ID>ReturnCount:MagicshineBleController.kt:MagicshineBleController$private suspend fun attemptConnect: Boolean</ID>
+    <ID>ReturnCount:MagicshineBleController.kt:MagicshineBleController.&lt;no name provided&gt;$override fun onScanResult</ID>
+    <ID>ReturnCount:MagicshineProtocol.kt:MagicshineDeviceConfig$fun buildCommand: ByteArray?</ID>
+    <ID>ReturnCount:TimeBasedController.kt:TimeBasedController$fun getCurrentZone: DayTimeZone</ID>
+    <ID>TooGenericExceptionCaught:KarooLightControl.kt:KarooLightControl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MagicshineBleController.kt:MagicshineBleController$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MagicshineBleController.kt:MagicshineBleController.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooManyFunctions:KarooLightControl.kt:KarooLightControl : LightController</ID>
+    <ID>TooManyFunctions:KarooLightControllerExtension.kt:KarooLightControllerExtension : KarooExtension</ID>
+    <ID>TooManyFunctions:LightControlEngine.kt:LightControlEngine</ID>
+    <ID>TooManyFunctions:MagicshineBleController.kt:MagicshineBleController : LightController</ID>
+    <ID>UnusedParameter:KarooLightControl.kt:KarooLightControl$enumClass: Class&lt;out Enum&lt;*&gt;&gt;</ID>
+  </CurrentIssues>
+</SmellBaseline>
