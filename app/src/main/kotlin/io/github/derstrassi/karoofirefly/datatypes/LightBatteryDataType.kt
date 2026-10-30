@@ -15,8 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -33,10 +32,6 @@ class LightBatteryDataType(
     companion object {
         const val TYPE_ID = "light-battery"
         private const val PLACEHOLDER = "\u2014"
-
-        // karoo-ext drops updateView calls faster than 1Hz; debounce collapses bursts (e.g. a
-        // connection change plus a battery update) so the final value is the one shown.
-        private const val VIEW_DEBOUNCE_MS = 250L
 
         private fun batteryValue(light: DiscoveredLight?): String =
             when {
@@ -65,8 +60,9 @@ class LightBatteryDataType(
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
         scope.launch {
-            discoveredLights.debounce(VIEW_DEBOUNCE_MS).distinctUntilChanged().collect { lights ->
-                val assignments = engine.settings.lightAssignments
+            combine(discoveredLights, engine.settingsFlow) { lights, settings ->
+                Pair(lights, settings.lightAssignments)
+            }.collectThrottledView { (lights, assignments) ->
                 val text =
                     if (assignments.isEmpty()) {
                         "No lights"

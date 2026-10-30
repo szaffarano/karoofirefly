@@ -19,10 +19,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Interactive ride-screen data field that cycles the active light zone (Day -> Night -> Off) on tap.
@@ -38,11 +37,12 @@ class ModeSwitchDataType(
     companion object {
         const val TYPE_ID = "mode-switch"
 
-        // karoo-ext drops updateView calls faster than 1Hz; debounce collapses the burst of
-        // engine state changes on ride start/pause so the final (meaningful) value is the one shown.
-        private const val VIEW_DEBOUNCE_MS = 250L
         private const val ACTION_CYCLE = "io.github.derstrassi.karoofirefly.MODE_SWITCH_CYCLE"
-        private const val REQUEST_CODE = 4212
+        private const val REQUEST_CODE_BASE = 4212
+
+        // Each live view gets its own action + request code so a tap routes to exactly one receiver,
+        // even when multiple Mode Switch fields are on screen at once.
+        private val viewCounter = AtomicInteger(0)
 
         private fun zoneLabel(zone: DayTimeZone?): String =
             when (zone) {
@@ -70,6 +70,9 @@ class ModeSwitchDataType(
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+        val viewId = viewCounter.incrementAndGet()
+        val action = "$ACTION_CYCLE.$viewId"
+
         val receiver =
             object : BroadcastReceiver() {
                 override fun onReceive(
@@ -83,22 +86,22 @@ class ModeSwitchDataType(
         ContextCompat.registerReceiver(
             context.applicationContext,
             receiver,
-            IntentFilter(ACTION_CYCLE),
+            IntentFilter(action),
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
         val pendingIntent =
             PendingIntent.getBroadcast(
                 context.applicationContext,
-                REQUEST_CODE,
-                Intent(ACTION_CYCLE).setPackage(context.packageName),
+                REQUEST_CODE_BASE + viewId,
+                Intent(action).setPackage(context.packageName),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
 
         scope.launch {
             combine(engine.activeZone, engine.state) { zone, state ->
                 Pair(zone, state)
-            }.debounce(VIEW_DEBOUNCE_MS).distinctUntilChanged().collect { (zone, state) ->
+            }.collectThrottledView { (zone, state) ->
                 val remoteViews = RemoteViews(context.packageName, R.layout.mode_switch_view)
                 remoteViews.setTextViewText(R.id.mode_switch_zone, zoneLabel(zone))
                 remoteViews.setTextViewText(

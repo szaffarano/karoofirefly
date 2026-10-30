@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -26,10 +25,6 @@ class LightStatusDataType(
     companion object {
         const val FIELD_ZONE = "zone"
         const val FIELD_ACTIVE = "active"
-
-        // karoo-ext drops updateView calls faster than 1Hz; debounce collapses the burst of
-        // engine state changes on ride start/pause so the final (meaningful) value is the one shown.
-        private const val VIEW_DEBOUNCE_MS = 250L
     }
 
     override fun startStream(emitter: Emitter<StreamState>) {
@@ -71,7 +66,7 @@ class LightStatusDataType(
                 engine.state,
             ) { activeZone, state ->
                 Pair(activeZone, state)
-            }.debounce(VIEW_DEBOUNCE_MS).distinctUntilChanged().collect { (activeZone, state) ->
+            }.collectThrottledView { (activeZone, state) ->
                 val remoteViews = RemoteViews(context.packageName, R.layout.light_status_view)
 
                 val modeText =
