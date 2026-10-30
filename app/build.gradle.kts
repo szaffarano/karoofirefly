@@ -35,8 +35,8 @@ android {
         applicationId = "io.github.szaffarano.karoofirefly"
         minSdk = 24
         targetSdk = 35
-        versionCode = 163
-        versionName = "0.6.2"
+        versionCode = 164
+        versionName = "0.7.0"
         buildConfigField("String", "GIT_SHA", "\"${gitShortSha()}\"")
     }
 
