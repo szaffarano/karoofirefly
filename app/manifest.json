@@ -2,7 +2,7 @@
     "label": "KarooFireFly",
     "packageName": "io.github.szaffarano.karoofirefly",
     "iconUrl": "https://raw.githubusercontent.com/szaffarano/karoofirefly/main/docs/ic_firefly.svg",
-    "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/download/v0.7.0/karoo-light-controller.apk",
+    "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/latest/download/karoo-light-controller.apk",
     "latestVersion": "0.7.0",
     "latestVersionCode": 165,
     "developer": "Sebasti\u00e1n Zaffarano",

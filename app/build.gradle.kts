@@ -105,9 +105,7 @@ dependencies {
 }
 
 // Regenerates app/manifest.json from the current version and RELEASE_NOTES env var.
-// The APK URL is pinned to the release tag (/releases/download/v<version>/...) rather than the
-// /releases/latest/download/ alias: the alias adds an extra HTTP redirect hop that Karoo's
-// downloader cannot follow (it handles one redirect, not two). Regenerated every release.
+// The APK URL is static (/releases/latest/download/...) so it never needs updating.
 // Invoked by the prepare-release skill; release notes come from RELEASE_NOTES.
 tasks.register("generateManifest") {
     group = "release"
@@ -120,8 +118,7 @@ tasks.register("generateManifest") {
         json["latestVersion"] = android.defaultConfig.versionName
         json["latestVersionCode"] = android.defaultConfig.versionCode
         json["latestApkUrl"] =
-            "https://github.com/szaffarano/karoofirefly/releases/download/" +
-            "v${android.defaultConfig.versionName}/karoo-light-controller.apk"
+            "https://github.com/szaffarano/karoofirefly/releases/latest/download/karoo-light-controller.apk"
         System.getenv("RELEASE_NOTES")?.takeIf { it.isNotBlank() }?.let { json["releaseNotes"] = it }
         manifestFile.writeText(groovy.json.JsonBuilder(json).toPrettyString() + "\n")
     }
