@@ -11,6 +11,20 @@
         graphical="true"
         icon="@drawable/ic_light" />
 
+    <DataType
+        typeId="light-battery"
+        displayName="@string/light_battery"
+        description="@string/light_battery_desc"
+        graphical="true"
+        icon="@drawable/ic_light" />
+
+    <DataType
+        typeId="mode-switch"
+        displayName="@string/mode_switch"
+        description="@string/mode_switch_desc"
+        graphical="true"
+        icon="@drawable/ic_light" />
+
     <BonusAction
         actionId="toggle-lights"
         displayName="@string/toggle_lights" />
