@@ -4,7 +4,7 @@
     "iconUrl": "https://raw.githubusercontent.com/szaffarano/karoofirefly/main/docs/ic_firefly.svg",
     "latestApkUrl": "https://github.com/szaffarano/karoofirefly/releases/download/v0.7.0/karoo-light-controller.apk",
     "latestVersion": "0.7.0",
-    "latestVersionCode": 164,
+    "latestVersionCode": 165,
     "developer": "Sebasti\u00e1n Zaffarano",
     "description": "Automatic smart bike light control based on time of day and ambient light. Supports ANT+ lights (via Karoo pairing) and Magicshine BLE lights (via Bluetooth). Per-light configuration with protocol-specific modes, time-based and ambient light sensor automation, radar warn flash for rear lights, zone change notifications, and manual override via BonusActions.",
     "releaseNotes": "* New ride-screen data fields:\n  - Light Battery \u2014 battery of each configured light (BLE: exact %, ANT+: GOOD/OK/LOW/CRITICAL)\n  - Mode Switch \u2014 tap to cycle the active zone (Day \u2192 Night \u2192 Off)\n  - Light Status now reliably reflects the active zone and refreshes on ride start/pause/resume"
