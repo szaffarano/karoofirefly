@@ -3,6 +3,10 @@
     <string name="app_name">KarooFireFly</string>
     <string name="light_status">Light Status</string>
     <string name="light_status_desc">Shows current light mode and battery</string>
+    <string name="light_battery">Light Battery</string>
+    <string name="light_battery_desc">Battery level of each configured light</string>
+    <string name="mode_switch">Mode Switch</string>
+    <string name="mode_switch_desc">Tap to cycle light zone (Day / Night / Off)</string>
     <string name="toggle_lights">Toggle Lights</string>
     <string name="cycle_mode">Cycle Light Mode</string>
     <string name="settings">Settings</string>

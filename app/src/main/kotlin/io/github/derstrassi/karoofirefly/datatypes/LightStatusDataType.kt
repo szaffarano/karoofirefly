@@ -66,7 +66,7 @@ class LightStatusDataType(
                 engine.state,
             ) { activeZone, state ->
                 Pair(activeZone, state)
-            }.distinctUntilChanged().collect { (activeZone, state) ->
+            }.collectThrottledView { (activeZone, state) ->
                 val remoteViews = RemoteViews(context.packageName, R.layout.light_status_view)
 
                 val modeText =

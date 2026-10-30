@@ -6,7 +6,9 @@ import io.github.derstrassi.karoofirefly.data.LightProtocol
 import io.github.derstrassi.karoofirefly.data.LightRole
 import io.github.derstrassi.karoofirefly.data.PreferencesRepository
 import io.github.derstrassi.karoofirefly.data.modeProviderFor
+import io.github.derstrassi.karoofirefly.datatypes.LightBatteryDataType
 import io.github.derstrassi.karoofirefly.datatypes.LightStatusDataType
+import io.github.derstrassi.karoofirefly.datatypes.ModeSwitchDataType
 import io.github.derstrassi.karoofirefly.engine.AmbientLightSensor
 import io.github.derstrassi.karoofirefly.engine.LightControlEngine
 import io.github.derstrassi.karoofirefly.engine.TimeBasedController
@@ -43,6 +45,7 @@ data class DiscoveredLight(
     val protocol: LightProtocol = LightProtocol.ANT_PLUS,
     val connected: Boolean = true,
     val batteryPercent: Int? = null,
+    val batteryStatus: String? = null,
     val temperature: Int? = null,
 )
 
@@ -89,7 +92,11 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
     private val extensionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override val types by lazy {
-        listOf(LightStatusDataType(engine))
+        listOf(
+            LightStatusDataType(engine),
+            ModeSwitchDataType(engine),
+            LightBatteryDataType(engine, discoveredLights),
+        )
     }
 
     override fun onCreate() {
@@ -358,7 +365,13 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                                     "CRITICAL" -> 5
                                     else -> null
                                 }
-                            AntDeviceInfo(device.id, device.name, device.details.manufacturer, batteryPercent)
+                            AntDeviceInfo(
+                                device.id,
+                                device.name,
+                                device.details.manufacturer,
+                                batteryPercent,
+                                batteryText,
+                            )
                         }
                     updateAntLights()
 
@@ -381,6 +394,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         val name: String,
         val manufacturer: String?,
         val batteryPercent: Int?,
+        val batteryStatus: String?,
     )
 
     private var antDeviceCache = listOf<AntDeviceInfo>()
@@ -394,6 +408,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                     manufacturer = device.manufacturer,
                     connected = lightControl.connectionStates.value[device.id] == "CONNECTED",
                     batteryPercent = device.batteryPercent,
+                    batteryStatus = device.batteryStatus,
                 )
             }
     }
