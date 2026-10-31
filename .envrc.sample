@@ -1,9 +1,5 @@
 use flake
 
-# karoo-ext GitHub Packages maven repo credentials
-export USERNAME=your-github-username
-export TOKEN="your-github-pat-with-read-packages"
-
 # Release signing (consumed by app/build.gradle.kts).
 export KEYSTORE_PATH="/path/to/release.jks"
 export KEYSTORE_PASSWORD="your-keystore-password"

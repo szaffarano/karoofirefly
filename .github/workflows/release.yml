@@ -45,8 +45,6 @@ jobs:
 
       - name: Build release APK
         env:
-          USERNAME: ${{ github.actor }}
-          TOKEN: ${{ secrets.KAROO_EXT_TOKEN }}
           KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

@@ -27,9 +27,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build and test
-        env:
-          USERNAME: ${{ github.actor }}
-          TOKEN: ${{ secrets.KAROO_EXT_TOKEN }}
         run: ./gradlew spotlessCheck detekt testDebugUnitTest lintDebug assembleDebug
 
       - name: Upload lint report
