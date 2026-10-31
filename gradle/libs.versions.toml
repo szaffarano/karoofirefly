@@ -17,6 +17,7 @@ nordicBle = "2.0.0-alpha02"
 desugarJdkLibs = "2.1.5"
 spotless = "8.10.4"
 detekt = "2.0.0-alpha.6"
+junit = "4.13.2"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -44,6 +45,7 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 nordic-ble-client = { module = "no.nordicsemi.kotlin.ble:client-android", version.ref = "nordicBle" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 [bundles]
 androidx-lifecycle = [

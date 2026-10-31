@@ -97,6 +97,8 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    testImplementation(libs.junit)
+
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // ANT Android SDK - place ant-lib.aar in app/libs/
