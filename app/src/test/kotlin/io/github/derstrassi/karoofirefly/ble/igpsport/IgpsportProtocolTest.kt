@@ -66,6 +66,22 @@ class IgpsportProtocolTest {
     }
 
     @Test
+    fun `OFF mode id resolves through to the OFF frame`() {
+        val mode = IgpsportModes.toProtocol(IgpsportModes.OFF_ID)!!
+        val f = IgpsportProtocol.setMode(mode)
+        val field5 = ProtoWire.parse(f.copyOfRange(IgpsportProtocol.HEADER_LEN, f.size))!!.message(5)!!
+        assertNull(ProtoWire.parse(field5)!!.varint(2)) // OFF => no mode value
+    }
+
+    @Test
+    fun `a mode id resolves through to its mode frame`() {
+        val mode = IgpsportModes.toProtocol("MODE_1")!!
+        val f = IgpsportProtocol.setMode(mode)
+        val field5 = ProtoWire.parse(f.copyOfRange(IgpsportProtocol.HEADER_LEN, f.size))!!.message(5)!!
+        assertEquals(1L, ProtoWire.parse(field5)!!.varint(2))
+    }
+
+    @Test
     fun `rejects a frame with a corrupt header CRC`() {
         val frame = Hex.decode("03 69 07 FF 01 FF FF 02 FF FF FF E1 00 00 00 5A FF FF FF 00")
         assertNull(IgpsportProtocol.parse(frame))

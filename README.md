@@ -30,6 +30,7 @@ Controls ANT+ and Bluetooth bike lights from your Karoo. Unlike Karoo's built-in
 | Magicshine Hori 1300 | BLE | ✅ Tested |
 | Magicshine EVO 1300 | BLE | ✅ Tested |
 | Magicshine EVO 1700 | BLE | ✅ Tested |
+| iGPSport VS800 | BLE | ✅ Tested |
 | Garmin Varia UT800 / HL500 | ANT+ | Should work (untested) |
 | Magicshine M1/M2/M3 series | BLE | Should work (auto-detected) |
 | Bontrager Ion / Flare RT | ANT+ | Should work (untested) |
@@ -37,7 +38,7 @@ Controls ANT+ and Bluetooth bike lights from your Karoo. Unlike Karoo's built-in
 
 **Features:**
 
-- **Multi-protocol support** — ANT+ lights via Karoo pairing, Magicshine BLE lights via direct Bluetooth
+- **Multi-protocol support** — ANT+ lights via Karoo pairing, Magicshine and iGPSport BLE lights via direct Bluetooth
 - Per-light configuration with protocol-specific modes (tap any light to configure)
 - Independent feature switches: Time-based and Ambient Light Sensor (enable one or both)
 - Automatic light mode switching based on time of day (sunrise/sunset with configurable offsets)
@@ -66,6 +67,10 @@ Pair your ANT+ lights through **Karoo's native sensor settings** (Settings > Sen
 ### Magicshine BLE Lights
 
 KarooFireFly discovers Magicshine lights via Bluetooth when you open the settings. Supported models (M1/M2/M3 series) appear automatically. Tap to configure and the extension connects.
+
+### iGPSport BLE Lights
+
+KarooFireFly discovers the iGPSport VS800 via Bluetooth when you open the settings. Tap to configure and the extension connects. Its modes are Off, three steady levels (High/Mid/Low), two flashes, and an Eco mode. Turning it off from the Karoo switches the beam off but keeps the light reachable, so it comes back on automatically for your next ride.
 
 ### Light Configuration
 
