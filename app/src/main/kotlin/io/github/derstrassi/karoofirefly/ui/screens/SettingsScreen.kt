@@ -418,6 +418,29 @@ private fun ProtocolBadge(protocol: LightProtocol) {
                 fontSize = 9.sp,
             )
         }
+
+        LightProtocol.IGPSPORT -> {
+            Row(
+                modifier =
+                    Modifier
+                        .background(Color(0xFF2E7D32), badgeShape)
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Default.Bluetooth,
+                    contentDescription = "iGPSport",
+                    modifier = Modifier.size(10.dp),
+                    tint = Color.White,
+                )
+                Text(
+                    "iGPS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    fontSize = 9.sp,
+                )
+            }
+        }
     }
 }
 
