@@ -12,7 +12,11 @@ object IgpsportModes {
     const val OFF_ID = "OFF"
     private const val PREFIX = "MODE_"
 
-    /** Known modes in display order (steady brightest-first, then flashes, then eco). */
+    /**
+     * Known, usable modes in display order (steady brightest-first, then flashes). Mode 20 is in the
+     * light's supported list but produces no visible output on the VS800, so it is deliberately not
+     * offered.
+     */
     private val LABELS =
         linkedMapOf(
             1 to "High",
@@ -20,7 +24,6 @@ object IgpsportModes {
             7 to "Low",
             4 to "Flash A",
             5 to "Flash B",
-            20 to "Eco",
         )
 
     fun id(mode: Int): String = if (mode == IgpsportProtocol.MODE_OFF) OFF_ID else "$PREFIX$mode"
@@ -31,13 +34,13 @@ object IgpsportModes {
     fun label(mode: Int): String = LABELS[mode] ?: "Mode $mode"
 
     /**
-     * Options for a light: OFF first, then the modes it supports (known order preserved, any unknown
-     * supported modes appended). Falls back to the full known set when the supported list is unknown.
+     * Options for a light: OFF first, then the labelled modes the light supports, in display order.
+     * Only known-usable modes are offered; unlabelled modes the light reports (e.g. the no-op mode 20)
+     * are left out. Falls back to the full known set when the supported list is unknown.
      */
     fun options(supported: List<Int>?): List<LightModeOption> {
-        val modes = supported?.takeIf { it.isNotEmpty() } ?: LABELS.keys.toList()
-        val ordered = LABELS.keys.filter { it in modes } + modes.filter { it !in LABELS }
-        return listOf(LightModeOption(OFF_ID, "Off")) + ordered.map { LightModeOption(id(it), label(it)) }
+        val modes = LABELS.keys.filter { supported == null || it in supported }
+        return listOf(LightModeOption(OFF_ID, "Off")) + modes.map { LightModeOption(id(it), label(it)) }
     }
 }
 

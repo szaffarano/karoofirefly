@@ -30,6 +30,12 @@ class IgpsportModesTest {
     @Test
     fun `options fall back to the full known set when supported is unknown`() {
         val ids = IgpsportModes.options(null).map { it.id }
-        assertEquals(listOf("OFF", "MODE_1", "MODE_2", "MODE_7", "MODE_4", "MODE_5", "MODE_20"), ids)
+        assertEquals(listOf("OFF", "MODE_1", "MODE_2", "MODE_7", "MODE_4", "MODE_5"), ids)
+    }
+
+    @Test
+    fun `unlabelled supported modes such as the no-op mode 20 are not offered`() {
+        val ids = IgpsportModes.options(listOf(1, 20)).map { it.id }
+        assertEquals(listOf("OFF", "MODE_1"), ids)
     }
 }

@@ -70,7 +70,7 @@ KarooFireFly discovers Magicshine lights via Bluetooth when you open the setting
 
 ### iGPSport BLE Lights
 
-KarooFireFly discovers the iGPSport VS800 via Bluetooth when you open the settings. Tap to configure and the extension connects. Its modes are Off, three steady levels (High/Mid/Low), two flashes, and an Eco mode. Turning it off from the Karoo switches the beam off but keeps the light reachable, so it comes back on automatically for your next ride.
+KarooFireFly discovers the iGPSport VS800 via Bluetooth when you open the settings. Tap to configure and the extension connects. Its modes are Off, three steady levels (High/Mid/Low), and two flashes. Turning it off from the Karoo switches the beam off but keeps the light reachable, so it comes back on automatically for your next ride.
 
 ### Light Configuration
 
