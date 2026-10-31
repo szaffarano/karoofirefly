@@ -39,12 +39,6 @@ Always run `spotlessCheck` and `detekt` before claiming work is complete — bot
 
 ## Environment & credentials
 
-The `karoo-ext` SDK is hosted on GitHub Packages and requires credentials to resolve
-dependencies (anything beyond `spotlessCheck`, which needs no Android deps):
-
-- `gpr.user` / `gpr.key` in `~/.gradle/gradle.properties`, **or** `USERNAME` / `TOKEN` env vars
-  (a GitHub PAT with `read:packages`).
-
 This repo uses Nix + direnv. Copy `.envrc.sample` to `.envrc` and fill in credentials and release
 signing vars. JDK 17+ is required (CI uses JDK 25).
 

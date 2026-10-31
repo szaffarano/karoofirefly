@@ -36,6 +36,7 @@ Controls ANT+ and Bluetooth bike lights from your Karoo. Unlike Karoo's built-in
 | Any ANT+ smart bike light | ANT+ | Should work if paired through Karoo |
 
 **Features:**
+
 - **Multi-protocol support** — ANT+ lights via Karoo pairing, Magicshine BLE lights via direct Bluetooth
 - Per-light configuration with protocol-specific modes (tap any light to configure)
 - Independent feature switches: Time-based and Ambient Light Sensor (enable one or both)
@@ -59,12 +60,15 @@ Controls ANT+ and Bluetooth bike lights from your Karoo. Unlike Karoo's built-in
 ## How It Works
 
 ### ANT+ Lights
+
 Pair your ANT+ lights through **Karoo's native sensor settings** (Settings > Sensors). KarooFireFly discovers them automatically.
 
 ### Magicshine BLE Lights
+
 KarooFireFly discovers Magicshine lights via Bluetooth when you open the settings. Supported models (M1/M2/M3 series) appear automatically. Tap to configure and the extension connects.
 
 ### Light Configuration
+
 Tap any light in the Connected Lights section to open its detail dialog. Assign a role (Front/Rear), configure Day and Night modes, and use the test buttons to preview. All changes auto-save.
 
 ## Settings
@@ -81,6 +85,7 @@ Discovered lights are shown with protocol badges (ANT+/BLE), manufacturer, and c
 ### Light Detail Dialog
 
 Each light has its own configuration dialog with:
+
 - Role assignment (Front / Rear)
 - Day and Night mode selection with protocol-specific modes
 - Test buttons to preview each mode for 3 seconds
@@ -140,12 +145,13 @@ When using an auto mode, BonusButton presses temporarily override the automatic 
 ## Roadmap
 
 ### v0.6 — Notification Settings
+
 - **Battery Low Alert** — in-ride notification when a light's battery drops below a configurable threshold
 - **Connection Lost Alert** — notification when a configured light loses connection during a ride
 
 ## Development Setup
 
-### 1. JDK 17
+### 1. JDK 17+
 
 ```bash
 brew install openjdk@17
@@ -166,15 +172,6 @@ Make sure `ANDROID_HOME` is set (Android Studio sets this automatically):
 
 ```bash
 export ANDROID_HOME=~/Library/Android/sdk
-```
-
-### 3. GitHub Packages credentials
-
-The karoo-ext SDK is hosted on GitHub Packages. Create a [GitHub personal access token](https://github.com/settings/tokens) with `read:packages` scope, then add to `~/.gradle/gradle.properties`:
-
-```properties
-gpr.user=YOUR_GITHUB_USERNAME
-gpr.key=YOUR_GITHUB_TOKEN
 ```
 
 ## Build & Deploy

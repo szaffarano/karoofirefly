@@ -5,8 +5,7 @@ Validation guide proving the three data fields work end-to-end. Implementation d
 
 ## Prerequisites
 
-- JDK 17+ and GitHub Packages credentials for `karoo-ext` (`gpr.user`/`gpr.key` in
-  `~/.gradle/gradle.properties` or `USERNAME`/`TOKEN` env vars) — see repo `AGENTS.md`.
+- JDK 17+.
 - A Hammerhead Karoo 3 (or emulator image) for on-device scenarios.
 - At least one configured light (ANT+ or BLE) assigned in the extension settings.
 
