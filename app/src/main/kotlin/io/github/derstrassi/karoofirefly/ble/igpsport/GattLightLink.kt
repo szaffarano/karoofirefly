@@ -72,8 +72,9 @@ class GattLightLink(
         c.value = next
         writeInFlight = g.writeCharacteristic(c)
         if (!writeInFlight) {
-            Timber.w("GATT write rejected; dropping %d queued chunks", pending.size)
+            Timber.w("GATT write rejected; clearing %d queued chunks and reconnecting", pending.size)
             pending.clear()
+            runCatching { g.disconnect() }
         }
     }
 
@@ -92,6 +93,9 @@ class GattLightLink(
         "NestedBlockDepth",
         "ReturnCount",
         "TooGenericExceptionCaught",
+        // connectGatt(..., TRANSPORT_LE) is flagged deprecated on newer SDK stubs, but it is the only
+        // option on Karoo 3 (Android 12); the newer overloads need a higher API level.
+        "DEPRECATION",
     ) // one cohesive BLE scan-connect-reconnect state machine; splitting it hurts readability
     override fun connect(address: String): Flow<LinkEvent> =
         callbackFlow {
@@ -202,10 +206,15 @@ class GattLightLink(
                         characteristic: BluetoothGattCharacteristic,
                         status: Int,
                     ) {
-                        if (status != BluetoothGatt.GATT_SUCCESS) Timber.w("Chunk write failed: %d", status)
                         synchronized(lock) {
                             writeInFlight = false
-                            pumpLocked()
+                            if (status != BluetoothGatt.GATT_SUCCESS) {
+                                Timber.w("Chunk write failed: %d; clearing queue and reconnecting", status)
+                                pending.clear()
+                                runCatching { g.disconnect() }
+                            } else {
+                                pumpLocked()
+                            }
                         }
                     }
 
