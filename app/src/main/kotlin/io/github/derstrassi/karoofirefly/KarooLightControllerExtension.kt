@@ -119,7 +119,7 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         lightControllers[LightProtocol.IGPSPORT] = igpsportController
         igpsportController.onDeviceConnected = {
             stopBleIfNotNeeded()
-            engine.activeZone.value?.let { zone -> engine.onApplyZone?.invoke(zone) }
+            engine.reapplyActiveZone()
         }
         timeController = TimeBasedController()
         ambientLightSensor = AmbientLightSensor(applicationContext)

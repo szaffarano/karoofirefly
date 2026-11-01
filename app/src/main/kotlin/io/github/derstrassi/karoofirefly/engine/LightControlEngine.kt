@@ -49,6 +49,10 @@ class LightControlEngine(
     private val _activeZone = MutableStateFlow<DayTimeZone?>(null)
     val activeZone: StateFlow<DayTimeZone?> = _activeZone
 
+    @Volatile
+    var hasEverAppliedZone = false
+        private set
+
     private val _settingsFlow = MutableStateFlow(LightControllerSettings())
     val settingsFlow: StateFlow<LightControllerSettings> = _settingsFlow
 
@@ -192,8 +196,18 @@ class LightControlEngine(
     }
 
     private fun applyZone(zone: DayTimeZone?) {
+        hasEverAppliedZone = true
         _activeZone.value = zone
         onApplyZone?.invoke(zone)
+    }
+
+    /**
+     * Re-applies the current desired zone (including a null zone, which means OFF) so a light that
+     * reconnects after missing a command is restored to the engine's state. Stays silent until the
+     * engine has applied a zone at least once, so an initial unset zone is not treated as OFF.
+     */
+    fun reapplyActiveZone() {
+        if (hasEverAppliedZone) onApplyZone?.invoke(_activeZone.value)
     }
 
     private fun determineCurrentZone(): DayTimeZone =
