@@ -51,6 +51,11 @@ class IgpsportBleController(
 
     var onDeviceConnected: (() -> Unit)? = null
     var assignedDeviceIds: Set<String> = emptySet()
+        set(value) {
+            val removed = field - value
+            field = value
+            removed.forEach { disconnect(it) }
+        }
 
     private var scanCallback: ScanCallback? = null
 
@@ -122,11 +127,14 @@ class IgpsportBleController(
     }
 
     fun connect(address: String) {
-        if (sessions.containsKey(address)) return
         names.putIfAbsent(address, DEFAULT_NAME)
-        val link = GattLightLink(appContext)
-        val job = scope.launch { link.connect(address).collect { handle(address, link, it) } }
-        sessions[address] = Session(link, job)
+        sessions.compute(address) { _, existing ->
+            existing ?: run {
+                val link = GattLightLink(appContext)
+                val job = scope.launch { link.connect(address).collect { handle(address, link, it) } }
+                Session(link, job)
+            }
+        }
     }
 
     private fun handle(
