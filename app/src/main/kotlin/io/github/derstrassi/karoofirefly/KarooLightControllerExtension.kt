@@ -373,13 +373,17 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
 
     private fun stopBleIfNotNeeded() {
         if (settingsUiActive) return
+        // The general discovery scanners only serve the settings UI (finding new, unassigned
+        // lights); they are never needed once settings is closed. Stop them regardless of
+        // connection state so a disconnected assigned light can't leave a low-latency scan running
+        // for a whole ride. Assigned lights still reconnect through each controller's own filtered
+        // low-power scan, which stopDiscovery() does not touch.
+        magicshineController.stopDiscovery()
+        igpsportController.stopDiscovery()
+        // Only drop the Bluetooth hold when nothing BLE is assigned; otherwise keep it so the
+        // controllers can reconnect assigned lights without a scan.
         if (!hasBleAssignments()) {
-            magicshineController.stopDiscovery()
-            igpsportController.stopDiscovery()
             karooSystem.dispatch(ReleaseBluetooth(extension))
-        } else if (allAssignedBleConnected()) {
-            magicshineController.stopDiscovery()
-            igpsportController.stopDiscovery()
         }
     }
 
