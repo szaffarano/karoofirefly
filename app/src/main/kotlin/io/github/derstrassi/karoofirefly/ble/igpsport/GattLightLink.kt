@@ -168,12 +168,15 @@ class GattLightLink(
                             g.disconnect()
                             return
                         }
-                        g.setCharacteristicNotification(notify, true)
-                        cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        pendingWriteChar.set(write)
-                        if (!g.writeDescriptor(cccd)) {
-                            Timber.w("CCCD write rejected; dropping the connection")
-                            g.disconnect()
+                        synchronized(lock) {
+                            if (gatt !== g) return // obsolete GATT; don't overwrite the live pendingWriteChar
+                            g.setCharacteristicNotification(notify, true)
+                            cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                            pendingWriteChar.set(write)
+                            if (!g.writeDescriptor(cccd)) {
+                                Timber.w("CCCD write rejected; dropping the connection")
+                                g.disconnect()
+                            }
                         }
                     }
 
