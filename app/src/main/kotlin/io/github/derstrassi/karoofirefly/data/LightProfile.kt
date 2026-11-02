@@ -20,7 +20,7 @@ enum class DayTimeZone {
 enum class LightRole { FRONT, REAR }
 
 @Serializable
-enum class LightProtocol { ANT_PLUS, BLE }
+enum class LightProtocol { ANT_PLUS, BLE, IGPSPORT }
 
 @Serializable
 data class LightAssignment(
@@ -102,6 +102,18 @@ fun modeProviderFor(
                         .forDevice("M1"),
                 )
             }
+        }
+
+        LightProtocol.IGPSPORT -> {
+            val supported =
+                deviceId?.let {
+                    io.github.derstrassi.karoofirefly.KarooLightControllerExtension
+                        .getInstance()
+                        ?.igpsportController
+                        ?.supportedModes(it)
+                }
+            io.github.derstrassi.karoofirefly.ble.igpsport
+                .IgpsportModeProvider(supported)
         }
     }
 

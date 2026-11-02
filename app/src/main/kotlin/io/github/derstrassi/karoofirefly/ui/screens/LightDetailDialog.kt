@@ -75,6 +75,7 @@ fun LightDetailDialog(
         when (light.protocol) {
             LightProtocol.ANT_PLUS -> "ANT+"
             LightProtocol.BLE -> "BLE"
+            LightProtocol.IGPSPORT -> "iGPSport"
         }
     val connectionLabel = if (light.connected) "Connected" else "Not found"
 
@@ -200,7 +201,8 @@ fun LightDetailDialog(
                             },
                     )
 
-                    if (role == LightRole.REAR) {
+                    // The VS800 has no usable radar-flash mode, so the option is hidden for it.
+                    if (role == LightRole.REAR && light.protocol != LightProtocol.IGPSPORT) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),

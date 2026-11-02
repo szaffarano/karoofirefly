@@ -55,7 +55,7 @@
     <ID>ReturnCount:MagicshineBleController.kt:MagicshineBleController$private suspend fun attemptConnect: Boolean</ID>
     <ID>ReturnCount:MagicshineBleController.kt:MagicshineBleController.&lt;no name provided&gt;$override fun onScanResult</ID>
     <ID>ReturnCount:MagicshineProtocol.kt:MagicshineDeviceConfig$fun buildCommand: ByteArray?</ID>
-    <ID>ReturnCount:TimeBasedController.kt:TimeBasedController$fun getCurrentZone: DayTimeZone</ID>
+    <ID>ReturnCount:TimeBasedController.kt:TimeBasedController$open fun getCurrentZone: DayTimeZone</ID>
     <ID>TooGenericExceptionCaught:KarooLightControl.kt:KarooLightControl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MagicshineBleController.kt:MagicshineBleController$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MagicshineBleController.kt:MagicshineBleController.&lt;no name provided&gt;$e: Exception</ID>
