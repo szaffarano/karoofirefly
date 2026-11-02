@@ -34,6 +34,8 @@ class LightControlEngine(
 
     var onZoneChange: ((DayTimeZone, DayTimeZone, String) -> Unit)? = null
 
+    private val zoneLock = Any()
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var zoneCheckJob: Job? = null
     private var sensorObserveJob: Job? = null
@@ -196,18 +198,26 @@ class LightControlEngine(
     }
 
     private fun applyZone(zone: DayTimeZone?) {
-        hasEverAppliedZone = true
-        _activeZone.value = zone
-        onApplyZone?.invoke(zone)
+        synchronized(zoneLock) {
+            hasEverAppliedZone = true
+            _activeZone.value = zone
+            onApplyZone?.invoke(zone)
+        }
     }
 
     /**
      * Re-applies the current desired zone (including a null zone, which means OFF) so a light that
      * reconnects after missing a command is restored to the engine's state. Stays silent until the
      * engine has applied a zone at least once, so an initial unset zone is not treated as OFF.
+     *
+     * Shares [zoneLock] with [applyZone] so the read of the current zone and its dispatch are atomic
+     * with respect to a concurrent zone change; otherwise a stale replay could be dispatched after a
+     * newer zone, leaving the light in the wrong state.
      */
     fun reapplyActiveZone() {
-        if (hasEverAppliedZone) onApplyZone?.invoke(_activeZone.value)
+        synchronized(zoneLock) {
+            if (hasEverAppliedZone) onApplyZone?.invoke(_activeZone.value)
+        }
     }
 
     private fun determineCurrentZone(): DayTimeZone =
