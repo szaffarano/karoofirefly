@@ -1,6 +1,9 @@
 package io.github.derstrassi.karoofirefly.engine
 
 import io.github.derstrassi.karoofirefly.data.DayTimeZone
+import io.github.derstrassi.karoofirefly.data.LightAssignment
+import io.github.derstrassi.karoofirefly.data.LightControllerSettings
+import io.github.derstrassi.karoofirefly.data.LightRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,6 +16,25 @@ class LightControlEngineTest {
         return engine to applied
     }
 
+    // TIME_BASED with a default TimeBasedController (no GPS) always resolves the natural zone to DAY.
+    private fun timeBasedSettings() =
+        LightControllerSettings(
+            autoOnWithRide = true,
+            autoOffOnPause = true,
+            keepLightsOnAtNightWhilePaused = false,
+            lightControlMode = "TIME_BASED",
+            lightAssignments =
+                listOf(
+                    LightAssignment(
+                        deviceId = "dev-1",
+                        deviceName = "Light",
+                        role = LightRole.FRONT,
+                        dayMode = "MODE_1",
+                        nightMode = "MODE_2",
+                    ),
+                ),
+        )
+
     @Test
     fun `reapplyActiveZone is silent before any zone has been applied`() {
         val (engine, applied) = newEngine()
@@ -20,6 +42,44 @@ class LightControlEngineTest {
         engine.reapplyActiveZone()
 
         assertTrue("initial unset zone must not be replayed as OFF", applied.isEmpty())
+    }
+
+    @Test
+    fun `auto ride resumes lights after an auto-off pause`() {
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings()
+
+        engine.onRideStart() // AUTO_CONTROL -> DAY
+        engine.onRidePause() // auto-off -> OFF
+        assertEquals(null, engine.activeZone.value)
+        applied.clear()
+
+        engine.onRideStart() // resume
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertTrue("resume must re-apply the running zone", applied.contains(DayTimeZone.DAY))
+    }
+
+    @Test
+    fun `manual override ride resumes lights after an auto-off pause`() {
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings()
+
+        engine.onRideStart() // AUTO_CONTROL -> DAY
+        engine.onCycleMode() // manual override DAY -> NIGHT
+        assertEquals(DayTimeZone.NIGHT, engine.activeZone.value)
+        engine.onRidePause() // auto-off -> OFF
+        assertEquals(null, engine.activeZone.value)
+        applied.clear()
+
+        engine.onRideStart() // resume
+
+        assertEquals(
+            "resume must restore the manual override zone, not stay off",
+            DayTimeZone.NIGHT,
+            engine.activeZone.value,
+        )
+        assertTrue("resume must re-apply the manual zone", applied.contains(DayTimeZone.NIGHT))
     }
 
     @Test
