@@ -9,31 +9,44 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LightControlEngineTest {
+    // A TimeBasedController whose natural zone the test controls directly.
+    private class FakeTime(
+        var zone: DayTimeZone = DayTimeZone.DAY,
+    ) : TimeBasedController() {
+        override fun getCurrentZone(): DayTimeZone = zone
+    }
+
+    private val time = FakeTime()
+
     private fun newEngine(): Pair<LightControlEngine, MutableList<DayTimeZone?>> {
-        val engine = LightControlEngine(TimeBasedController())
+        val engine = LightControlEngine(time)
         val applied = mutableListOf<DayTimeZone?>()
         engine.onApplyZone = { applied.add(it) }
         return engine to applied
     }
 
-    // TIME_BASED with a default TimeBasedController (no GPS) always resolves the natural zone to DAY.
-    private fun timeBasedSettings() =
-        LightControllerSettings(
-            autoOnWithRide = true,
-            autoOffOnPause = true,
-            keepLightsOnAtNightWhilePaused = false,
-            lightControlMode = "TIME_BASED",
-            lightAssignments =
-                listOf(
-                    LightAssignment(
-                        deviceId = "dev-1",
-                        deviceName = "Light",
-                        role = LightRole.FRONT,
-                        dayMode = "MODE_1",
-                        nightMode = "MODE_2",
-                    ),
+    private fun timeBasedSettings(
+        autoOnWithRide: Boolean = true,
+        autoOffWithRide: Boolean = true,
+        autoOffOnPause: Boolean = true,
+        keepLightsOnAtNightWhilePaused: Boolean = false,
+    ) = LightControllerSettings(
+        autoOnWithRide = autoOnWithRide,
+        autoOffWithRide = autoOffWithRide,
+        autoOffOnPause = autoOffOnPause,
+        keepLightsOnAtNightWhilePaused = keepLightsOnAtNightWhilePaused,
+        lightControlMode = "TIME_BASED",
+        lightAssignments =
+            listOf(
+                LightAssignment(
+                    deviceId = "dev-1",
+                    deviceName = "Light",
+                    role = LightRole.FRONT,
+                    dayMode = "MODE_1",
+                    nightMode = "MODE_2",
                 ),
-        )
+            ),
+    )
 
     @Test
     fun `reapplyActiveZone is silent before any zone has been applied`() {
@@ -74,6 +87,69 @@ class LightControlEngineTest {
 
         assertEquals(DayTimeZone.DAY, engine.activeZone.value)
         assertTrue("resume must re-apply the running zone", applied.contains(DayTimeZone.DAY))
+    }
+
+    @Test
+    fun `toggle turns lights on while idle`() {
+        val (engine, _) = newEngine()
+        engine.settings = timeBasedSettings()
+
+        engine.onToggleLights()
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertEquals(LightControlEngine.EngineState.MANUAL_OVERRIDE, engine.state.value)
+    }
+
+    @Test
+    fun `ride stop turns lights off when autoOffWithRide is enabled`() {
+        val (engine, _) = newEngine()
+        engine.settings = timeBasedSettings(autoOffWithRide = true)
+        engine.onRideStart()
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+
+        engine.onRideStop()
+
+        assertEquals(null, engine.activeZone.value)
+        assertEquals(LightControlEngine.EngineState.IDLE, engine.state.value)
+    }
+
+    @Test
+    fun `ride stop keeps lights on when autoOffWithRide is disabled`() {
+        val (engine, _) = newEngine()
+        engine.settings = timeBasedSettings(autoOffWithRide = false)
+        engine.onRideStart()
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+
+        engine.onRideStop()
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+    }
+
+    @Test
+    fun `manual override drift-cancels to auto when the natural zone changes`() {
+        val (engine, _) = newEngine()
+        engine.settings = timeBasedSettings()
+        engine.onRideStart() // auto DAY
+        engine.onCycleMode() // manual override DAY -> NIGHT, anchored at DAY
+        assertEquals(DayTimeZone.NIGHT, engine.activeZone.value)
+
+        time.zone = DayTimeZone.NIGHT // natural zone drifts to night
+        engine.onRidePause()
+        engine.onRideStart() // resume re-evaluates
+
+        assertEquals(DayTimeZone.NIGHT, engine.activeZone.value)
+        assertEquals(LightControlEngine.EngineState.AUTO_CONTROL, engine.state.value)
+    }
+
+    @Test
+    fun `debug mode applies the natural zone even when autoOnWithRide is disabled`() {
+        val (engine, _) = newEngine()
+        engine.settings = timeBasedSettings(autoOnWithRide = false)
+        time.zone = DayTimeZone.NIGHT
+
+        engine.setDebugMode(true)
+
+        assertEquals(DayTimeZone.NIGHT, engine.activeZone.value)
     }
 
     @Test

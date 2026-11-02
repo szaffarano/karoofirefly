@@ -9,7 +9,7 @@ import java.util.Calendar
  * Determines the current DayTimeZone based on GPS location and time.
  * Uses ca.rmen:lib-sunrise-sunset for local sunrise/sunset calculation.
  */
-class TimeBasedController {
+open class TimeBasedController {
     private var lastLatitude: Double? = null
     private var lastLongitude: Double? = null
     private var lastSunrise: Calendar? = null
@@ -52,7 +52,7 @@ class TimeBasedController {
         )
     }
 
-    fun getCurrentZone(): DayTimeZone {
+    open fun getCurrentZone(): DayTimeZone {
         val sunrise = lastSunrise ?: return DayTimeZone.DAY
         val sunset = lastSunset ?: return DayTimeZone.DAY
         val now = Calendar.getInstance()
