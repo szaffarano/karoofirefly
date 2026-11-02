@@ -32,6 +32,8 @@ class LightControlEngine(
 
     var onApplyZone: ((DayTimeZone?) -> Unit)? = null
 
+    var onApplyZoneToDevice: ((DayTimeZone?, String) -> Unit)? = null
+
     var onZoneChange: ((DayTimeZone, DayTimeZone, String) -> Unit)? = null
 
     private val zoneLock = Any()
@@ -253,6 +255,17 @@ class LightControlEngine(
     fun reapplyActiveZone() {
         synchronized(zoneLock) {
             if (hasEverAppliedZone) onApplyZone?.invoke(_activeZone.value)
+        }
+    }
+
+    /**
+     * Re-applies the current desired zone to a single reconnected device, leaving every other light
+     * untouched (so a reconnect cannot clobber an unrelated light that is, e.g., radar-flashing).
+     * Serialized with [applyZone] via [zoneLock] for the same atomicity reason as [reapplyActiveZone].
+     */
+    fun reapplyActiveZone(deviceId: String) {
+        synchronized(zoneLock) {
+            if (hasEverAppliedZone) onApplyZoneToDevice?.invoke(_activeZone.value, deviceId)
         }
     }
 

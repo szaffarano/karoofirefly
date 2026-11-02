@@ -49,7 +49,7 @@ class IgpsportBleController(
     private val _discoveredLights = MutableStateFlow<List<DiscoveredLight>>(emptyList())
     val discoveredLights: StateFlow<List<DiscoveredLight>> = _discoveredLights
 
-    var onDeviceConnected: (() -> Unit)? = null
+    var onDeviceConnected: ((String) -> Unit)? = null
     var assignedDeviceIds: Set<String> = emptySet()
         set(value) {
             val removed = field - value
@@ -110,12 +110,18 @@ class IgpsportBleController(
 
                 override fun onScanFailed(errorCode: Int) {
                     Timber.e("$TAG: BLE scan failed: %d", errorCode)
+                    // Clear only if we are still the active callback, so a late failure from an old
+                    // scan cannot wipe a newer one; otherwise discovery would stay wedged.
+                    if (scanCallback === this) scanCallback = null
                 }
             }
         val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        scanCallback = callback
         runCatching { scanner.startScan(null, settings, callback) }
-            .onSuccess { scanCallback = callback }
-            .onFailure { Timber.w(it, "$TAG: could not start discovery") }
+            .onFailure {
+                Timber.w(it, "$TAG: could not start discovery")
+                if (scanCallback === callback) scanCallback = null
+            }
     }
 
     @SuppressLint("MissingPermission") // guarded by hasScanPermission()
@@ -146,7 +152,7 @@ class IgpsportBleController(
             LinkEvent.Connected -> {
                 connected[address] = true
                 updateDiscoveredLights()
-                onDeviceConnected?.invoke()
+                onDeviceConnected?.invoke(address)
                 link.send(IgpsportProtocol.readSupportedModes())
                 link.send(IgpsportProtocol.readCurrentMode())
             }

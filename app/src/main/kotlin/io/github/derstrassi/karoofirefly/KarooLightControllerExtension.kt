@@ -117,9 +117,9 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
         }
         igpsportController = IgpsportBleController(applicationContext)
         lightControllers[LightProtocol.IGPSPORT] = igpsportController
-        igpsportController.onDeviceConnected = {
+        igpsportController.onDeviceConnected = { deviceId ->
             stopBleIfNotNeeded()
-            engine.reapplyActiveZone()
+            engine.reapplyActiveZone(deviceId)
         }
         timeController = TimeBasedController()
         ambientLightSensor = AmbientLightSensor(applicationContext)
@@ -131,6 +131,21 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                 lightControllers[assignment.protocol]?.setMode(assignment.deviceId, modeName)
             }
             updateRadarMonitoring()
+        }
+
+        engine.onApplyZoneToDevice = { zone, deviceId ->
+            val assignment = engine.settings.lightAssignments.find { it.deviceId == deviceId }
+            if (assignment != null) {
+                val zoneMode = if (zone == null) "OFF" else assignment.modeForZone(zone)
+                // Preserve an in-progress radar warning on this light instead of overriding it with OFF.
+                val modeName =
+                    if (radarThreatActive && assignment.radarWarnFlash && zoneMode == "OFF") {
+                        "FAST_FLASH"
+                    } else {
+                        zoneMode
+                    }
+                lightControllers[assignment.protocol]?.setMode(assignment.deviceId, modeName)
+            }
         }
 
         engine.onZoneChange = { oldZone, newZone, reason ->

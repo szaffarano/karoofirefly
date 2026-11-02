@@ -45,6 +45,22 @@ class LightControlEngineTest {
     }
 
     @Test
+    fun `per-device replay targets only the reconnected device`() {
+        val (engine, _) = newEngine()
+        val perDevice = mutableListOf<Pair<DayTimeZone?, String>>()
+        engine.onApplyZoneToDevice = { zone, id -> perDevice.add(zone to id) }
+        engine.settings = timeBasedSettings()
+
+        engine.reapplyActiveZone("dev-1")
+        assertTrue("must stay silent before any zone applied", perDevice.isEmpty())
+
+        engine.onRideStart() // applies DAY
+        engine.reapplyActiveZone("dev-1")
+
+        assertEquals(listOf<Pair<DayTimeZone?, String>>(DayTimeZone.DAY to "dev-1"), perDevice)
+    }
+
+    @Test
     fun `auto ride resumes lights after an auto-off pause`() {
         val (engine, applied) = newEngine()
         engine.settings = timeBasedSettings()
