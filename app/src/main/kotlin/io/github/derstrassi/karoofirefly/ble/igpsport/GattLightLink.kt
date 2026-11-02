@@ -207,6 +207,7 @@ class GattLightLink(
                         status: Int,
                     ) {
                         synchronized(lock) {
+                            if (gatt !== g) return // obsolete GATT; don't touch the live connection's state
                             writeInFlight = false
                             if (status != BluetoothGatt.GATT_SUCCESS) {
                                 Timber.w("Chunk write failed: %d; clearing queue and reconnecting", status)
