@@ -30,12 +30,13 @@ class LightControlEngineTest {
         autoOffWithRide: Boolean = true,
         autoOffOnPause: Boolean = true,
         keepLightsOnAtNightWhilePaused: Boolean = false,
+        controlMode: String = "TIME_BASED",
     ) = LightControllerSettings(
         autoOnWithRide = autoOnWithRide,
         autoOffWithRide = autoOffWithRide,
         autoOffOnPause = autoOffOnPause,
         keepLightsOnAtNightWhilePaused = keepLightsOnAtNightWhilePaused,
-        lightControlMode = "TIME_BASED",
+        lightControlMode = controlMode,
         lightAssignments =
             listOf(
                 LightAssignment(
@@ -139,6 +140,51 @@ class LightControlEngineTest {
 
         assertEquals(DayTimeZone.NIGHT, engine.activeZone.value)
         assertEquals(LightControlEngine.EngineState.AUTO_CONTROL, engine.state.value)
+    }
+
+    @Test
+    fun `a manual command during pause overrides auto-off and turns lights on`() {
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings() // autoOffOnPause = true
+        engine.onRideStart() // auto DAY
+        engine.onRidePause() // auto-off -> OFF
+        assertEquals(null, engine.activeZone.value)
+        applied.clear()
+
+        engine.onToggleLights() // explicit command while paused
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertTrue("manual command during pause must turn lights on", applied.contains(DayTimeZone.DAY))
+    }
+
+    @Test
+    fun `ride start with autoOnWithRide disabled leaves retained lights untouched`() {
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings(autoOnWithRide = true, autoOffWithRide = false)
+        engine.onRideStart() // auto DAY
+        engine.onRideStop() // auto-off disabled -> lights retained on
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+
+        engine.settings = timeBasedSettings(autoOnWithRide = false, autoOffWithRide = false)
+        applied.clear()
+        engine.onRideStart() // auto-on disabled -> must not dispatch OFF
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertTrue("disabled auto-start must not dispatch anything", applied.isEmpty())
+    }
+
+    @Test
+    fun `manual-only ride start leaves a manually set light on`() {
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings(controlMode = "MANUAL_ONLY")
+        engine.onToggleLights() // manual ON
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        applied.clear()
+
+        engine.onRideStart() // manual-only must not turn the light off
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertTrue("manual-only ride start must not dispatch OFF", applied.isEmpty())
     }
 
     @Test

@@ -56,6 +56,15 @@ class LightControlEngine(
         ) : Intent
     }
 
+    /** The reconcile outcome: either dispatch a specific zone (null = OFF) or leave the lights as-is. */
+    private sealed interface Output {
+        data class Apply(
+            val zone: DayTimeZone?,
+        ) : Output
+
+        data object Leave : Output
+    }
+
     var onApplyZone: ((DayTimeZone?) -> Unit)? = null
 
     var onApplyZoneToDevice: ((DayTimeZone?, String) -> Unit)? = null
@@ -73,6 +82,10 @@ class LightControlEngine(
     @Volatile private var phase = RidePhase.IDLE
 
     @Volatile private var intent: Intent = Intent.Auto
+
+    // True while a retained pre-pause override is yielding to automatic pause-off. A manual command
+    // issued during the pause clears it so the command takes effect; a resume/stop clears it too.
+    @Volatile private var suppressOverrideForPause = false
 
     private val _state = MutableStateFlow(EngineState.IDLE)
     val state: StateFlow<EngineState> = _state
@@ -99,13 +112,17 @@ class LightControlEngine(
 
     fun onRideStart() {
         Timber.d("LightControlEngine: ride started")
+        suppressOverrideForPause = false
         phase = RidePhase.RIDING
         reconcile()
-        if (settings.controlMode != LightControlMode.MANUAL_ONLY) startZoneChecking()
+        if (settings.controlMode != LightControlMode.MANUAL_ONLY && settings.autoOnWithRide) startZoneChecking()
     }
 
     fun onRidePause() {
         Timber.d("LightControlEngine: ride paused")
+        // Suppress a retained override only on the transition into pause, so a repeated Paused
+        // notification can't re-suppress a command the rider issued meanwhile.
+        if (phase != RidePhase.PAUSED) suppressOverrideForPause = true
         phase = RidePhase.PAUSED
         reconcile()
     }
@@ -113,12 +130,14 @@ class LightControlEngine(
     fun onRideStop() {
         Timber.d("LightControlEngine: ride stopped")
         stopZoneChecking()
+        suppressOverrideForPause = false
         phase = RidePhase.IDLE
         intent = Intent.Auto // a stop clears any manual override
         reconcile()
     }
 
     fun onToggleLights() {
+        suppressOverrideForPause = false // an explicit command overrides automatic pause-off
         val natural = determineCurrentZone()
         val target = if (_activeZone.value != null) null else resolveOnZone()
         intent = Intent.Manual(target, natural)
@@ -126,6 +145,7 @@ class LightControlEngine(
     }
 
     fun onCycleMode() {
+        suppressOverrideForPause = false // an explicit command overrides automatic pause-off
         val natural = determineCurrentZone()
         val dayHasModes = hasModesForZone(DayTimeZone.DAY)
         val nightHasModes = hasModesForZone(DayTimeZone.NIGHT)
@@ -195,9 +215,11 @@ class LightControlEngine(
             val previousZone = _currentZone.value
             _currentZone.value = natural
 
-            applyZone(desiredZone(natural))
+            val applied = desiredOutput(natural)
+            if (applied is Output.Apply) applyZone(applied.zone)
 
-            if (natural != previousZone && phase == RidePhase.RIDING && intent is Intent.Auto) {
+            val autoZoneChanged = natural != previousZone && phase == RidePhase.RIDING && intent is Intent.Auto
+            if (applied is Output.Apply && autoZoneChanged) {
                 Timber.d("Zone: $previousZone → $natural")
                 onZoneChange?.invoke(previousZone, natural, zoneChangeReason(natural))
             }
@@ -205,19 +227,24 @@ class LightControlEngine(
     }
 
     @Suppress("ReturnCount") // ordered precedence guards read most clearly as early returns
-    private fun desiredZone(natural: DayTimeZone): DayTimeZone? {
-        if (phase == RidePhase.PAUSED && settings.autoOffOnPause && !keepLightsOnAtNight()) return null
-
-        (intent as? Intent.Manual)?.let { return it.target }
-
-        if (phase == RidePhase.IDLE) {
-            return if (settings.autoOffWithRide) null else _activeZone.value
+    private fun desiredOutput(natural: DayTimeZone): Output {
+        // Automatic pause-off: the default while paused, unless a manual command issued during the
+        // pause overrides it. A retained pre-pause override stays suppressed and dark.
+        if (phase == RidePhase.PAUSED && settings.autoOffOnPause && !keepLightsOnAtNight()) {
+            if (intent is Intent.Auto || suppressOverrideForPause) return Output.Apply(null)
         }
 
-        // Riding (or paused but kept on) under auto control.
-        if (settings.controlMode == LightControlMode.MANUAL_ONLY) return null
-        if (!settings.autoOnWithRide) return null
-        return natural
+        (intent as? Intent.Manual)?.let { return Output.Apply(it.target) }
+
+        if (phase == RidePhase.IDLE) {
+            return if (settings.autoOffWithRide) Output.Apply(null) else Output.Leave
+        }
+
+        // Riding (or paused but kept on) under auto control. When automatic control is disabled the
+        // engine must not touch the lights — that is a no-op, not an OFF command.
+        if (settings.controlMode == LightControlMode.MANUAL_ONLY) return Output.Leave
+        if (!settings.autoOnWithRide) return Output.Leave
+        return Output.Apply(natural)
     }
 
     private fun publishState() {
