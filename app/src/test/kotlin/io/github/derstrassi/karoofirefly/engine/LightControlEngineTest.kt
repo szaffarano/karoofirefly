@@ -77,6 +77,37 @@ class LightControlEngineTest {
     }
 
     @Test
+    fun `ride start while already paused falls through to normal auto start`() {
+        // Extension starts mid-paused-ride: state is IDLE, then a Paused event arrives first.
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings()
+
+        engine.onRidePause() // captures IDLE, turns off
+        applied.clear()
+
+        engine.onRideStart() // resume must not restore IDLE; it should auto-start
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertTrue("startup-during-pause must still auto-start", applied.contains(DayTimeZone.DAY))
+    }
+
+    @Test
+    fun `repeated pause notifications preserve the original pre-pause state`() {
+        val (engine, applied) = newEngine()
+        engine.settings = timeBasedSettings()
+
+        engine.onRideStart() // AUTO_CONTROL -> DAY
+        engine.onRidePause() // snapshot AUTO/DAY, off
+        engine.onRidePause() // repeated pause must not clobber the snapshot
+        applied.clear()
+
+        engine.onRideStart() // resume
+
+        assertEquals(DayTimeZone.DAY, engine.activeZone.value)
+        assertTrue("repeated pause must still resume lights", applied.contains(DayTimeZone.DAY))
+    }
+
+    @Test
     fun `manual override ride resumes lights after an auto-off pause`() {
         val (engine, applied) = newEngine()
         engine.settings = timeBasedSettings()

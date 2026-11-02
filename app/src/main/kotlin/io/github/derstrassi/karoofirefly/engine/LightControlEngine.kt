@@ -75,8 +75,7 @@ class LightControlEngine(
     fun onRideStart() {
         Timber.d("LightControlEngine: ride started")
         if (settings.controlMode == LightControlMode.MANUAL_ONLY) return
-        if (_state.value == EngineState.PAUSED) {
-            resumeFromPause()
+        if (_state.value == EngineState.PAUSED && resumeFromPause()) {
             return
         }
         if (settings.autoOnWithRide) {
@@ -88,37 +87,53 @@ class LightControlEngine(
 
     fun onRidePause() {
         Timber.d("LightControlEngine: ride paused")
-        stateBeforePause = _state.value
-        zoneBeforePause = _activeZone.value
+        // Snapshot only on the transition into PAUSED; a repeated Paused notification must not
+        // overwrite the real pre-pause state with PAUSED and the already-cleared zone.
+        if (_state.value != EngineState.PAUSED) {
+            stateBeforePause = _state.value
+            zoneBeforePause = _activeZone.value
+        }
         _state.value = EngineState.PAUSED
         if (settings.autoOffOnPause && !keepLightsOnAtNight()) {
             applyZone(null)
         }
     }
 
-    private fun resumeFromPause() {
+    /**
+     * Restores the pre-pause light state on resume. Returns true when it handled the resume (the
+     * engine was actively controlling lights before the pause); returns false when it was not (e.g.
+     * the extension started mid-paused-ride and captured IDLE), so the caller falls through to
+     * normal ride-start handling.
+     */
+    private fun resumeFromPause(): Boolean {
         Timber.d("LightControlEngine: ride resumed (was $stateBeforePause)")
-        when (stateBeforePause) {
-            EngineState.MANUAL_OVERRIDE -> {
-                _state.value = EngineState.MANUAL_OVERRIDE
-                zoneBeforePause?.let { applyZone(it) } // restore the manual pick that pause turned off
-                applyAutoMode() // cancels the override only if the natural zone drifted while paused
-                startZoneChecking()
-            }
+        val restored =
+            when (stateBeforePause) {
+                EngineState.MANUAL_OVERRIDE -> {
+                    _state.value = EngineState.MANUAL_OVERRIDE
+                    zoneBeforePause?.let { applyZone(it) } // restore the manual pick pause turned off
+                    applyAutoMode() // cancels the override only if the natural zone drifted while paused
+                    startZoneChecking()
+                    true
+                }
 
-            EngineState.AUTO_CONTROL -> {
-                _state.value = EngineState.AUTO_CONTROL
-                applyAutoMode() // activeZone is null after an auto-off pause, so this re-applies
-                startZoneChecking()
-            }
+                EngineState.AUTO_CONTROL -> {
+                    _state.value = EngineState.AUTO_CONTROL
+                    applyAutoMode() // activeZone is null after an auto-off pause, so this re-applies
+                    startZoneChecking()
+                    true
+                }
 
-            else -> {
-                // Not actively controlling lights before the pause; leave them as they are.
-                _state.value = stateBeforePause ?: EngineState.IDLE
+                else -> {
+                    // Wasn't actively controlling lights before the pause; reset to idle and let
+                    // normal ride-start handling take over.
+                    _state.value = EngineState.IDLE
+                    false
+                }
             }
-        }
         stateBeforePause = null
         zoneBeforePause = null
+        return restored
     }
 
     private fun keepLightsOnAtNight(): Boolean =
