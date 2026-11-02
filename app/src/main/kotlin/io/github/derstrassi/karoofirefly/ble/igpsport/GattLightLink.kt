@@ -298,8 +298,9 @@ class GattLightLink(
 
                         override fun onScanFailed(errorCode: Int) {
                             Timber.w("Connect scan failed: %d", errorCode)
-                            scanCallbackRef.compareAndSet(this, null)
-                            scheduleRetry()
+                            // Retry only if we still own the scan; the watchdog may have already
+                            // replaced it, and a stray retry could disrupt that replacement scan.
+                            if (scanCallbackRef.compareAndSet(this, null)) scheduleRetry()
                         }
                     }
                 synchronized(lock) {
