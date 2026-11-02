@@ -68,9 +68,13 @@ class LightControlEngine(
     private var zoneCheckJob: Job? = null
     private var sensorObserveJob: Job? = null
 
-    private var phase = RidePhase.IDLE
-    private var intent: Intent = Intent.Auto
-    private var debugActive = false
+    // Mutated by external callers and read by the IO coroutines that drive reconcile(); volatile for
+    // cross-thread visibility, while reconcile() groups each read+apply atomically under zoneLock.
+    @Volatile private var phase = RidePhase.IDLE
+
+    @Volatile private var intent: Intent = Intent.Auto
+
+    @Volatile private var debugActive = false
 
     private val _state = MutableStateFlow(EngineState.IDLE)
     val state: StateFlow<EngineState> = _state
@@ -200,24 +204,26 @@ class LightControlEngine(
      * while actively auto-controlling.
      */
     private fun reconcile() {
-        val natural = determineCurrentZone()
+        synchronized(zoneLock) {
+            val natural = determineCurrentZone()
 
-        (intent as? Intent.Manual)?.let { manual ->
-            if (natural != manual.anchor) {
-                Timber.d("Override anchor ${manual.anchor} drifted to $natural; resuming auto control")
-                intent = Intent.Auto
+            (intent as? Intent.Manual)?.let { manual ->
+                if (natural != manual.anchor) {
+                    Timber.d("Override anchor ${manual.anchor} drifted to $natural; resuming auto control")
+                    intent = Intent.Auto
+                }
             }
-        }
-        publishState()
+            publishState()
 
-        val previousZone = _currentZone.value
-        _currentZone.value = natural
+            val previousZone = _currentZone.value
+            _currentZone.value = natural
 
-        applyZone(desiredZone(natural))
+            applyZone(desiredZone(natural))
 
-        if (natural != previousZone && phase == RidePhase.RIDING && intent is Intent.Auto) {
-            Timber.d("Zone: $previousZone → $natural")
-            onZoneChange?.invoke(previousZone, natural, zoneChangeReason(natural))
+            if (natural != previousZone && phase == RidePhase.RIDING && intent is Intent.Auto) {
+                Timber.d("Zone: $previousZone → $natural")
+                onZoneChange?.invoke(previousZone, natural, zoneChangeReason(natural))
+            }
         }
     }
 
