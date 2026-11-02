@@ -25,7 +25,7 @@ import timber.log.Timber
  *  1. a paused ride with auto-off (and not kept on at night) → OFF, regardless of intent;
  *  2. a manual override → its target (survives pause, beats idle/auto);
  *  3. idle → OFF when auto-off-with-ride, otherwise hold the current output;
- *  4. riding under auto → the natural zone (unless manual-only / auto-on disabled, or debug forces).
+ *  4. riding under auto → the natural zone (unless manual-only or auto-on-with-ride is disabled).
  */
 class LightControlEngine(
     private val timeController: TimeBasedController,
@@ -73,8 +73,6 @@ class LightControlEngine(
     @Volatile private var phase = RidePhase.IDLE
 
     @Volatile private var intent: Intent = Intent.Auto
-
-    @Volatile private var debugActive = false
 
     private val _state = MutableStateFlow(EngineState.IDLE)
     val state: StateFlow<EngineState> = _state
@@ -155,27 +153,6 @@ class LightControlEngine(
         reconcile()
     }
 
-    fun setDebugMode(enabled: Boolean) {
-        Timber.d("LightControlEngine: debug mode ${if (enabled) "ON" else "OFF"}")
-        debugActive = enabled
-        intent = Intent.Auto
-        if (enabled) {
-            phase = RidePhase.RIDING
-            reconcile()
-            startZoneChecking()
-        } else {
-            stopZoneChecking()
-            phase = RidePhase.IDLE
-            reconcile()
-        }
-    }
-
-    fun setDebugZone(zone: DayTimeZone) {
-        Timber.d("LightControlEngine: debug set zone ${zone.name}")
-        intent = Intent.Manual(zone, determineCurrentZone())
-        reconcile()
-    }
-
     /**
      * Re-applies the current desired zone to every assigned light so a controller that just
      * (re)connected is restored to the engine's state. Stays silent until a zone has been applied at
@@ -238,10 +215,8 @@ class LightControlEngine(
         }
 
         // Riding (or paused but kept on) under auto control.
-        if (!debugActive) {
-            if (settings.controlMode == LightControlMode.MANUAL_ONLY) return null
-            if (!settings.autoOnWithRide) return null
-        }
+        if (settings.controlMode == LightControlMode.MANUAL_ONLY) return null
+        if (!settings.autoOnWithRide) return null
         return natural
     }
 

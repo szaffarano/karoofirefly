@@ -142,17 +142,6 @@ class LightControlEngineTest {
     }
 
     @Test
-    fun `debug mode applies the natural zone even when autoOnWithRide is disabled`() {
-        val (engine, _) = newEngine()
-        engine.settings = timeBasedSettings(autoOnWithRide = false)
-        time.zone = DayTimeZone.NIGHT
-
-        engine.setDebugMode(true)
-
-        assertEquals(DayTimeZone.NIGHT, engine.activeZone.value)
-    }
-
-    @Test
     fun `ride start while already paused falls through to normal auto start`() {
         // Extension starts mid-paused-ride: state is IDLE, then a Paused event arrives first.
         val (engine, applied) = newEngine()
