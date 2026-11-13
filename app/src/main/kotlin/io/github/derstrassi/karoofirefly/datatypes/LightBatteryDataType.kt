@@ -47,7 +47,8 @@ class LightBatteryDataType(
         config: ViewConfig,
         emitter: ViewEmitter,
     ) {
-        emitter.onNext(UpdateGraphicConfig(showHeader = false))
+        // Show Karoo's native field header (the "Light Battery" name) as a heading above the rows.
+        emitter.onNext(UpdateGraphicConfig(showHeader = true))
 
         if (config.preview) {
             val preview = RemoteViews(context.packageName, R.layout.light_battery_view)

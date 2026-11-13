@@ -25,3 +25,6 @@ release.jks
 .direnv/
 local.properties
 .envrc
+
+# Kotlin incremental compilation / daemon session artifacts
+.kotlin/
