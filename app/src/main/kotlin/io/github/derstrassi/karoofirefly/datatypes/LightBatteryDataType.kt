@@ -21,9 +21,10 @@ import kotlinx.coroutines.launch
 /**
  * Read-only ride-screen data field showing the battery level of each configured light.
  *
- * BLE lights report an exact percentage; ANT+ lights report a coarse status word
- * (GOOD/OK/LOW/CRITICAL), so each protocol is displayed in its native granularity to avoid implying
- * false precision. Disconnected/unknown lights show a placeholder. One row per assigned light.
+ * BLE lights report an exact percentage; ANT+ lights report only a coarse status enum, which is
+ * mapped to a representative percentage (in KarooLightControllerExtension) so both protocols are
+ * shown consistently as a percentage. Disconnected/unknown lights show a placeholder. One row per
+ * assigned light.
  */
 class LightBatteryDataType(
     private val engine: LightControlEngine,
@@ -36,7 +37,6 @@ class LightBatteryDataType(
         private fun batteryValue(light: DiscoveredLight?): String =
             when {
                 light == null || !light.connected -> PLACEHOLDER
-                light.batteryStatus != null -> light.batteryStatus
                 light.batteryPercent != null -> "${light.batteryPercent}%"
                 else -> PLACEHOLDER
             }
@@ -51,7 +51,7 @@ class LightBatteryDataType(
 
         if (config.preview) {
             val preview = RemoteViews(context.packageName, R.layout.light_battery_view)
-            preview.setTextViewText(R.id.light_battery_text, "F: 80%\nR: GOOD")
+            preview.setTextViewText(R.id.light_battery_text, "F: 80%\nR: 50%")
             emitter.updateView(preview)
             emitter.setCancellable { }
             return
