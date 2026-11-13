@@ -405,8 +405,13 @@ class KarooLightControllerExtension : KarooExtension("karoo-light-controller", B
                     antDeviceCache =
                         lights.map { device ->
                             val batteryText = device.details.lastBattery?.name
+                            // ANT+ reports only a coarse BatteryStatus enum (no real percentage),
+                            // so each level is mapped to a representative percentage within its
+                            // bucket (see BatteryStatus.fromPercentage in karoo-ext). INVALID and an
+                            // absent value yield null (shown as a placeholder).
                             val batteryPercent =
                                 when (batteryText) {
+                                    "NEW" -> 100
                                     "GOOD" -> 80
                                     "OK" -> 50
                                     "LOW" -> 20
